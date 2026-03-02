@@ -3,32 +3,42 @@ package br.unesp.compilerLALG;
 import br.unesp.compilerLALG.exception.CompilerException;
 import br.unesp.compilerLALG.lexer.Lexer;
 import br.unesp.compilerLALG.lexer.Token;
+import br.unesp.compilerLALG.parser.Parser;
 import br.unesp.compilerLALG.parser.ast.ASTnode;
 import br.unesp.compilerLALG.parser.ast.BinOpNode;
 import br.unesp.compilerLALG.parser.ast.NumNode;
 
+import java.util.Arrays;
 import java.util.List;
 
 public class CalculadoraEngine {
 
-    private Lexer lexer;
-    public double calculate(String expression) throws CompilerException {
-        // 1. Lexer transforma a string em tokens
-        // 2. Parser transforma tokens em AST
-        // 3. Evaluator calcula o resultado da AST
-        // Retorna o valor final
-
-
-        List<Token> tokens = lexer.tokenize();
-
-        return 0;
+    public CalculadoraEngine() {
     }
 
-    public class evaluator {
-        public double evaluate() {
-            // Implementar a lógica de avaliação da AST aqui
-            return 0;
-        }
+    public double calculate(String expression) throws CompilerException {
+       try {
+           // 1. Lexer transforma a string em tokens
+           Lexer lexer = new Lexer(expression);
+           List<Token> tokens = lexer.tokenize();
+
+           // 2. Parser transforma tokens em AST
+           Parser parser = new Parser(tokens);
+           ASTnode astRaiz = parser.parse();
+
+           // 3. Evaluator calcula o resultado da AST
+           evaluator eval = new evaluator();
+
+
+           // Retorna o valor final
+           return eval.visit(astRaiz);
+       }catch (RuntimeException e) {
+           throw new CompilerException(e.getMessage());
+       }
+
+    }
+
+    public static class evaluator {
 
         public double visit(ASTnode node) {
             if (node instanceof NumNode) {
@@ -37,6 +47,7 @@ public class CalculadoraEngine {
             else if (node instanceof BinOpNode binOpNode) {
                 double leftValue = visit(binOpNode.getLeft());
                 double rightValue = visit(binOpNode.getRight());
+                System.out.println("Calculando: " + leftValue + " " + binOpNode.getOp() + " " + rightValue);
                 return switch (binOpNode.getOp()) {
                     case "+" -> leftValue + rightValue;
                     case "-" -> leftValue - rightValue;

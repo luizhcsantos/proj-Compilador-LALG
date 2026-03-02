@@ -2,6 +2,7 @@ package br.unesp.compilerLALG.parser;
 
 import br.unesp.compilerLALG.lexer.TipoToken;
 import br.unesp.compilerLALG.lexer.Token;
+import br.unesp.compilerLALG.parser.ast.ASTnode;
 import br.unesp.compilerLALG.parser.ast.BinOpNode;
 import br.unesp.compilerLALG.parser.ast.NumNode;
 
@@ -9,65 +10,78 @@ import java.util.List;
 
 public class Parser {
 
-    private List<Token> tokens;
+    private final List<Token> tokens;
     private int pos = 0;
 
     public Parser(List<Token> tokens) {
         this.tokens = tokens;
+        System.out.println("Tokens recebidos para parsing:");
+        for (Token token : tokens) {
+            System.out.println("Token: " + token.getLexema() + " Tipo: " + token.getToken());
+        }   
     }
 
-    public void parse() {
-        // Implementar a lógica de parsing aqui
-        // Exemplo: criar uma AST a partir dos tokens
+    public ASTnode parse() {
+        return expressao();
     }
 
-    public NumNode fator() {
 
-        for (Token tokenAtual : tokens) {
-            if (tokenAtual.getToken().equals("NUM")) {
-                pos++;
-                return new NumNode(Double.parseDouble(tokenAtual.getLexema()));
-            } else if (tokenAtual.getToken().equals("AP")) {
-                tokenAtual = tokens.get(pos + 1);
-                BinOpNode expressao = expressao();
-                pos++;
-                tokenAtual = tokens.get(tokens.indexOf(tokenAtual) + 1);
-                if (tokenAtual.getToken().equals("FP")) {
-                    return new NumNode();
-                } else {
-                    // Lógica para lidar com erros de sintaxe
-                }
+    public ASTnode fator() {
+        Token tokenAtual = tokens.get(pos);
+        if (tokenAtual.getToken().equals("NUM")) {
+            pos++; // "come" o número
+            return new NumNode(Double.parseDouble(tokenAtual.getLexema()));
+        } else if (tokenAtual.getToken().equals("AP")) {
+            pos++; // "come" o parêntese de abertura
 
+            // resolve tudo que está dentro do oarenteses
+            ASTnode expressaoInterna = expressao();
+
+            // verifica se fehcou o parêntese corretamente
+            if (pos < tokens.size() && tokens.get(pos).getToken().equals("FP")) {
+                pos++; // "come" o parêntese de fechamento
+                return expressaoInterna;
+            } else {
+                throw new RuntimeException("Erro de Sintaxe: Esperado ')' na coluna " + tokenAtual.getColunaFinal());
             }
-        }
-        return new NumNode(Double.parseDouble(tokens.get(tokens.size()).getLexema()));
-    }
-
-    public BinOpNode termo() {
-        NumNode noEsquerda = fator();
-        BinOpNode noAtual;
-        while (tokens.stream().anyMatch(token -> token.getToken().equals("OPMUL") || token.getToken().equals("OPDIV"))) {
-            String operador = tokens.get(pos).getToken();
-            pos++;
-            NumNode noDireita = fator();
-            noAtual = new BinOpNode(noEsquerda, operador, noDireita);
-            noEsquerda = noAtual;
 
         }
-        return noAtual;
+        throw new RuntimeException("Erro de Sintaxe: Token inesperado '" + tokenAtual.getLexema());
     }
 
-    public BinOpNode expressao() {
-        BinOpNode noEsquerda = termo();
-        BinOpNode noAtual;
-        while (tokens.stream().anyMatch(token -> token.getToken().equals("OPSOMA") || token.getToken().equals("OPSUB"))) {
-            String operador = tokens.get(pos).getToken();
+    // resolve multiplicação e divisão
+    public ASTnode termo() {
+        ASTnode noEsquerda = fator();
+
+        while (pos < tokens.size() && (tokens.get(pos).getToken().equals("OPMULT") || tokens.get(pos).getToken().equals("OPDIV"))) {
+
+            String operador = tokens.get(pos).getLexema();
             pos++;
-            BinOpNode noDireita = termo();
+
+            ASTnode noDireita = fator();
+
             noEsquerda = new BinOpNode(noEsquerda, operador, noDireita);
-            noEsquerda = noAtual;
+
         }
-        return noAtual;
+        // Se entrou no while, devolve a árvore de multiplicação.
+        // Se não entrou, devolve o número puro intacto.
+        return noEsquerda;
+    }
+
+    // resolve adição e subtração
+    public ASTnode expressao() {
+        ASTnode noEsquerda = termo();
+
+        while (pos < tokens.size() && (tokens.get(pos).getToken().equals("OPADD") || tokens.get(pos).getToken().equals("OPSUB"))) {
+
+            String operador = tokens.get(pos).getLexema();
+            pos++;
+
+            ASTnode noDireita = termo();
+
+            noEsquerda = new BinOpNode(noEsquerda, operador, noDireita);
+        }
+        return noEsquerda;
     }
 
     private void eat(TipoToken tipoEsperado) {

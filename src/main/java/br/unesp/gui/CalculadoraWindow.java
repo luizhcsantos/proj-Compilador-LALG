@@ -10,10 +10,9 @@ import java.awt.event.ActionListener;
 public class CalculadoraWindow extends JFrame implements ActionListener {
 
     private final JTextField display;
-    private final CalculadoraEngine engine;
+    private CalculadoraEngine engine;
 
     public CalculadoraWindow() {
-        engine = new CalculadoraEngine();
 
         setTitle("Calculadora LALG");
         setSize(400, 600);
@@ -58,6 +57,9 @@ public class CalculadoraWindow extends JFrame implements ActionListener {
             display.setText("");
         } else if (command.equals("=")) {
             String expression = display.getText();
+            System.out.println("Calculando expressão: " + expression);
+
+            engine = new CalculadoraEngine();
             try {
                 double result = engine.calculate(expression);
                 if (result == (long) result) {
