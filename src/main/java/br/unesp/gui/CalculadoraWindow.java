@@ -9,8 +9,8 @@ import java.awt.event.ActionListener;
 
 public class CalculadoraWindow extends JFrame implements ActionListener {
 
-    private JTextField display;
-    private CalculadoraEngine engine;
+    private final JTextField display;
+    private final CalculadoraEngine engine;
 
     public CalculadoraWindow() {
         engine = new CalculadoraEngine();
@@ -27,13 +27,14 @@ public class CalculadoraWindow extends JFrame implements ActionListener {
         add(display, BorderLayout.NORTH);
 
         JPanel buttonPanel = new JPanel();
-        buttonPanel.setLayout(new GridLayout(4, 4, 5, 5));
+        buttonPanel.setLayout(new GridLayout(5, 4, 5, 5));
 
         String[] buttons = {
                 "7", "8", "9", "/",
                 "4", "5", "6", "*",
                 "1", "2", "3", "-",
-                "0", ".", "=", "+"
+                "0", ".", "=", "+",
+                "C", "(", ")", ""
         };
 
         for (String text : buttons) {
@@ -51,6 +52,29 @@ public class CalculadoraWindow extends JFrame implements ActionListener {
 
     @Override
     public void actionPerformed(ActionEvent e) {
+        String command = e.getActionCommand();
 
+        if (command.equals("C")) {
+            display.setText("");
+        } else if (command.equals("=")) {
+            String expression = display.getText();
+            try {
+                double result = engine.calculate(expression);
+                if (result == (long) result) {
+                    display.setText(String.format("%d", (long) result));
+                } else {
+                    display.setText(String.format("%s", result));
+                }
+
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this,
+                        "Erro: " + ex.getMessage(),
+                        "Erro de Cálculo", JOptionPane.ERROR_MESSAGE);
+                display.setText("");
+            }
+        }
+        else {
+            display.setText(display.getText() + command);
+        }
     }
 }
