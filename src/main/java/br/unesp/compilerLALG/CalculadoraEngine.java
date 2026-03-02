@@ -34,8 +34,7 @@ public class CalculadoraEngine {
             if (node instanceof NumNode) {
                 return ((NumNode) node).getValue();
             }
-            else if (node instanceof BinOpNode) {
-                BinOpNode binOpNode = (BinOpNode) node;
+            else if (node instanceof BinOpNode binOpNode) {
                 double leftValue = visit(binOpNode.getLeft());
                 double rightValue = visit(binOpNode.getRight());
                 return switch (binOpNode.getOp()) {

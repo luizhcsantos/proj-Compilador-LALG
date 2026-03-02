@@ -25,10 +25,12 @@ public class Parser {
 
         for (Token tokenAtual : tokens) {
             if (tokenAtual.getToken().equals("NUM")) {
-                return new NumNode();
+                pos++;
+                return new NumNode(Double.parseDouble(tokenAtual.getLexema()));
             } else if (tokenAtual.getToken().equals("AP")) {
-                tokenAtual = tokens.get(tokens.indexOf(tokenAtual) + 1);
-                expressao();
+                tokenAtual = tokens.get(pos + 1);
+                BinOpNode expressao = expressao();
+                pos++;
                 tokenAtual = tokens.get(tokens.indexOf(tokenAtual) + 1);
                 if (tokenAtual.getToken().equals("FP")) {
                     return new NumNode();
@@ -38,25 +40,34 @@ public class Parser {
 
             }
         }
-        return new NumNode();
+        return new NumNode(Double.parseDouble(tokens.get(tokens.size()).getLexema()));
     }
 
     public BinOpNode termo() {
-        NumNode fator = fator();
+        NumNode noEsquerda = fator();
+        BinOpNode noAtual;
         while (tokens.stream().anyMatch(token -> token.getToken().equals("OPMUL") || token.getToken().equals("OPDIV"))) {
-            // Lógica para lidar com multiplicação e divisão
-            fator = fator();
+            String operador = tokens.get(pos).getToken();
+            pos++;
+            NumNode noDireita = fator();
+            noAtual = new BinOpNode(noEsquerda, operador, noDireita);
+            noEsquerda = noAtual;
+
         }
-        return new BinOpNode();
+        return noAtual;
     }
 
     public BinOpNode expressao() {
-        BinOpNode termo = termo();
+        BinOpNode noEsquerda = termo();
+        BinOpNode noAtual;
         while (tokens.stream().anyMatch(token -> token.getToken().equals("OPSOMA") || token.getToken().equals("OPSUB"))) {
-            // Lógica para lidar com adição e subtração
-            termo = termo();
+            String operador = tokens.get(pos).getToken();
+            pos++;
+            BinOpNode noDireita = termo();
+            noEsquerda = new BinOpNode(noEsquerda, operador, noDireita);
+            noEsquerda = noAtual;
         }
-        return termo;
+        return noAtual;
     }
 
     private void eat(TipoToken tipoEsperado) {
