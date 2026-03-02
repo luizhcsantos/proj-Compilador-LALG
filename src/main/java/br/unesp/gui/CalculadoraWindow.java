@@ -57,8 +57,10 @@ public class CalculadoraWindow extends JFrame implements ActionListener {
             display.setText("");
         } else if (command.equals("=")) {
             String expression = display.getText();
+            if (expression == null || expression.trim().isEmpty()) {
+                return;
+            }
             System.out.println("Calculando expressão: " + expression);
-
             engine = new CalculadoraEngine();
             try {
                 double result = engine.calculate(expression);

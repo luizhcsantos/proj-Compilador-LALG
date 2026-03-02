@@ -12,16 +12,15 @@ public class BinOpNode extends ASTnode {
         this.right = right;
     }
 
-    public String getOp() {
-
-        return null;
+    public ASTnode getLeft() {
+        return left;
     }
 
-    public ASTnode getLeft() {
-        return null;
+    public String getOp() {
+        return op;
     }
 
     public ASTnode getRight() {
-        return null;
+        return right;
     }
 }

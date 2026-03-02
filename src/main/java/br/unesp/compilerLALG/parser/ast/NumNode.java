@@ -9,6 +9,6 @@ public class NumNode extends ASTnode {
     }
 
     public double getValue() {
-        return 0;
+        return value;
     }
 }

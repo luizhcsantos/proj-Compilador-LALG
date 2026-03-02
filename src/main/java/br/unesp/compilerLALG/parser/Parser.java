@@ -15,10 +15,7 @@ public class Parser {
 
     public Parser(List<Token> tokens) {
         this.tokens = tokens;
-        System.out.println("Tokens recebidos para parsing:");
-        for (Token token : tokens) {
-            System.out.println("Token: " + token.getLexema() + " Tipo: " + token.getToken());
-        }   
+
     }
 
     public ASTnode parse() {
@@ -28,23 +25,28 @@ public class Parser {
 
     public ASTnode fator() {
         Token tokenAtual = tokens.get(pos);
-        if (tokenAtual.getToken().equals("NUM")) {
-            pos++; // "come" o número
-            return new NumNode(Double.parseDouble(tokenAtual.getLexema()));
-        } else if (tokenAtual.getToken().equals("AP")) {
-            pos++; // "come" o parêntese de abertura
+        switch (tokenAtual.getToken()) {
+            case "EOF" -> throw new RuntimeException("Expressão incompleta. Faltou um número.");
+            case "NUM" -> {
+                pos++; // "come" o número
 
-            // resolve tudo que está dentro do oarenteses
-            ASTnode expressaoInterna = expressao();
-
-            // verifica se fehcou o parêntese corretamente
-            if (pos < tokens.size() && tokens.get(pos).getToken().equals("FP")) {
-                pos++; // "come" o parêntese de fechamento
-                return expressaoInterna;
-            } else {
-                throw new RuntimeException("Erro de Sintaxe: Esperado ')' na coluna " + tokenAtual.getColunaFinal());
+                return new NumNode(Double.parseDouble(tokenAtual.getLexema())); // "come" o número
             }
+            case "AP" -> {
+                pos++; // "come" o parêntese de abertura
 
+
+                // resolve tudo que está dentro do oarenteses
+                ASTnode expressaoInterna = expressao();
+
+                // verifica se fehcou o parêntese corretamente
+                if (pos < tokens.size() && tokens.get(pos).getToken().equals("FP")) {
+                    pos++; // "come" o parêntese de fechamento
+                    return expressaoInterna;
+                } else {
+                    throw new RuntimeException("Erro de Sintaxe: Esperado ')' na coluna " + tokenAtual.getColunaFinal());
+                }
+            }
         }
         throw new RuntimeException("Erro de Sintaxe: Token inesperado '" + tokenAtual.getLexema());
     }
@@ -53,7 +55,7 @@ public class Parser {
     public ASTnode termo() {
         ASTnode noEsquerda = fator();
 
-        while (pos < tokens.size() && (tokens.get(pos).getToken().equals("OPMULT") || tokens.get(pos).getToken().equals("OPDIV"))) {
+        while (pos < tokens.size() && (tokens.get(pos).getToken().equals("OPMUL") || tokens.get(pos).getToken().equals("OPDIV"))) {
 
             String operador = tokens.get(pos).getLexema();
             pos++;
@@ -72,7 +74,7 @@ public class Parser {
     public ASTnode expressao() {
         ASTnode noEsquerda = termo();
 
-        while (pos < tokens.size() && (tokens.get(pos).getToken().equals("OPADD") || tokens.get(pos).getToken().equals("OPSUB"))) {
+        while (pos < tokens.size() && (tokens.get(pos).getToken().equals("OPSOMA") || tokens.get(pos).getToken().equals("OPSUB"))) {
 
             String operador = tokens.get(pos).getLexema();
             pos++;
@@ -84,11 +86,4 @@ public class Parser {
         return noEsquerda;
     }
 
-    private void eat(TipoToken tipoEsperado) {
-        if (pos < tokens.size() && tokens.get(pos).getToken().equals(tipoEsperado.name())) {
-            pos++;
-        } else {
-            // Lógica para lidar com erros de sintaxe
-        }
-    }
 }

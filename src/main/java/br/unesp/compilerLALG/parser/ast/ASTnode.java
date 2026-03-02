@@ -1,4 +1,4 @@
 package br.unesp.compilerLALG.parser.ast;
 
-public class ASTnode {
+public abstract class ASTnode {
 }
