@@ -30,7 +30,17 @@ public class Parser {
             case "NUM" -> {
                 pos++; // "come" o número
 
-                return new NumNode(Double.parseDouble(tokenAtual.getLexema())); // "come" o número
+                // Verifica se o Lexer mandou um texto vazio antes de converter
+                String textoDoNumero = tokenAtual.getLexema();
+                if (textoDoNumero == null || textoDoNumero.trim().isEmpty()) {
+                    throw new RuntimeException("Erro interno no Lexer: Um número vazio foi gerado.");
+                }
+
+                try {
+                    return new NumNode(Double.parseDouble(textoDoNumero));
+                } catch (NumberFormatException e) {
+                    throw new RuntimeException("Erro ao converter para número: '" + textoDoNumero + "'");
+                }
             }
             case "AP" -> {
                 pos++; // "come" o parêntese de abertura

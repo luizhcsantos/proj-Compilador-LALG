@@ -64,6 +64,8 @@ public class Lexer {
                     } else {
                         throw new RuntimeException("Erro Léxico: Caractere não reconhecido '" + charAtual + "' na posição " + pos);
                     }
+
+                    break;
                 case 1:
                     // Estado de montagem da parte inteira do número:
                     // Se for dígito, acumula em 'lexemaAtual' e avança 'pos'.
@@ -103,8 +105,8 @@ public class Lexer {
                                 colunaAtual - 1));
                         lexemaAtual.setLength(0); // Limpa o StringBuilder
                         estado = 0; // Volta para o estado inicial
-                        break;
                     }
+                    break;
             }
         }
 
