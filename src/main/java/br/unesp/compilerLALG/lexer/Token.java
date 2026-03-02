@@ -60,4 +60,12 @@ public class Token {
     public void setColunaInicial(int colunaInicial) {
         this.colunaInicial = colunaInicial;
     }
+
+    public boolean getType() {
+        return token.equals(TipoToken.NUM.name()) ||
+                token.equals(TipoToken.OPSOMA.name()) ||
+                token.equals(TipoToken.OPSUB.name()) ||
+                token.equals(TipoToken.OPMUL.name()) ||
+                token.equals(TipoToken.OPDIV.name());
+    }
 }
