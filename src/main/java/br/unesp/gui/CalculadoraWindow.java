@@ -5,6 +5,9 @@ import br.unesp.compilerLALG.lexer.Token;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.text.Style;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.StyledDocument;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -12,7 +15,8 @@ import java.util.List;
 
 public class CalculadoraWindow extends JFrame {
 
-    private final JTextArea editorArea;
+    private final JTextPane editorArea;
+    private final JTextArea linhasArea;
     private final DefaultTableModel modeloTabela;
     private final JTextArea logArea;
     private final JTabbedPane painelInferior;
@@ -44,29 +48,53 @@ public class CalculadoraWindow extends JFrame {
 
         // ÁREA DO EDITOR (Parte Superior)
         JTabbedPane painelArquivos = new JTabbedPane();
-        editorArea = new JTextArea();
+        editorArea = new JTextPane() {
+            @Override
+            public boolean getScrollableTracksViewportWidth() {
+                return false;
+            }
+        };
         editorArea.setFont(new Font("Monospaced", Font.PLAIN, 16));
+        editorArea.setText("program teste;\nvar x: int;\nbegin\n   x := 10;\nend.");
+
+        linhasArea = new JTextArea("1");
+        linhasArea.setBackground(new Color(240, 240, 240));
+        linhasArea.setForeground(Color.GRAY);
+        linhasArea.setEditable(false);
+        linhasArea.setFont(new Font("Monospaced", Font.PLAIN, 16));
+        linhasArea.setMargin(new Insets(0, 5, 0, 5));
+
+        editorArea.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { atualizarEditor(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { atualizarEditor(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {}
+        });
+
+        aplicarSyntaxHighlighting();
+
         // Texto inicial para teste
         editorArea.setText("program soma;\n" +
-                "var a, b, soma : int;\n" +
+                "int a, b, soma;\n" +
                 "begin\n" +
-                "  read(a, b);\n" +
+                "  a := 10;\n" +
+                "  b := 15;\n" +
                 "  soma := a + b;\n" +
-                "  write(soma)\n" +
                 "end.\n" +
                 "   \n" +
                 "  ");
 
         JScrollPane scrollEditor = new JScrollPane(editorArea);
+        scrollEditor.setRowHeaderView(linhasArea);
+        atualizarEditor();
         painelArquivos.addTab("Arquivo 1", scrollEditor);
 
         // CRIAR PAINEL INFERIOR (Tabelas e Logs)
         painelInferior = new JTabbedPane();
 
-        // Aba de Análise Sintática (impkementada nu futuro próximo...)
+        // Aba de Análise Sintática (impkementada num futuro próximo...)
         JTextArea sintaticaArea = new JTextArea();
         sintaticaArea.setEditable(false);
-        painelInferior.addTab("Análise Sintática", new JScrollPane(sintaticaArea));
+        //painelInferior.addTab("Análise Sintática", new JScrollPane(sintaticaArea));
 
         // Aba de Logs
         logArea = new JTextArea();
@@ -147,7 +175,7 @@ public class CalculadoraWindow extends JFrame {
             logArea.setText("Análise Léxica concluída com sucesso!\n" + tokens.size() + " tokens encontrados.");
 
             // Foca automaticamente na aba da Tabela de Lexemas para o usuário ver o resultado
-            painelInferior.setSelectedIndex(2);
+            painelInferior.setSelectedIndex(1);
 
         } catch (Exception ex) {
             // Se o Lexer lançar um erro (ex: caractere não reconhecido), mostra no Log
@@ -186,5 +214,58 @@ public class CalculadoraWindow extends JFrame {
                 JOptionPane.showMessageDialog(this, "Erro ao salvar o arquivo: " + ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
             }
         }
+    }
+
+    private void atualizarEditor() {
+
+        // Aplica a cor azul nas palavras reservadas
+        aplicarSyntaxHighlighting();
+
+        // Calciula e desenha os números de linha
+        SwingUtilities.invokeLater(() -> {
+            try {
+                int totalLinhas = editorArea.getDocument().getDefaultRootElement().getElementCount();
+
+                StringBuilder textoNumeros = new StringBuilder();
+                for (int i = 0; i < totalLinhas; i++) {
+                    textoNumeros.append(i).append("\n");
+                }
+
+                linhasArea.setText(textoNumeros.toString());
+            } catch(Exception e) {
+                // Ignora erros de sincronia durante a digitação rápida
+            }
+        });
+    }
+
+    private void aplicarSyntaxHighlighting() {
+        SwingUtilities.invokeLater(() -> {
+            String texto = editorArea.getText();
+
+            texto = texto.replaceAll("\\r", "");
+
+            StyledDocument doc = editorArea.getStyledDocument();
+
+            // 1. Reseta tudo para Preto e sem negrito primeiro
+            Style estiloPadrao = editorArea.addStyle("Padrao", null);
+            StyleConstants.setForeground(estiloPadrao, Color.BLACK);
+            StyleConstants.setBold(estiloPadrao, false);
+            doc.setCharacterAttributes(0, texto.length(), estiloPadrao, true);
+
+            // 2. Define o estilo das Palavras Reservadas (Azul e Negrito)
+            Style estiloReservada = editorArea.addStyle("Reservada", null);
+            StyleConstants.setForeground(estiloReservada, Color.BLUE);
+            StyleConstants.setBold(estiloReservada, true);
+
+            // 3. Regex com todas as palavras reservadas da LALG
+            String regexPAlavras = "\\b(program|begin|end|procedure|var|if|then|else|while|do|int|boolean|read|write|true|false|div|and|or|not)\\b";
+            java.util.regex.Matcher matcher = java.util.regex.Pattern.compile(regexPAlavras).matcher(texto);
+
+            // 4. Procura palavras no textp e aplica a cor azul
+            while (matcher.find()) {
+                doc.setCharacterAttributes(matcher.start(), matcher.end() - matcher.start(), estiloReservada, false);
+            }
+
+        });
     }
 }
