@@ -85,6 +85,30 @@ public class Lexer {
                 if (matcher.find()) {
                     String lexema = matcher.group();
 
+                    if (tipo.name().equals("IDENTIFICADOR") && lexema.length() > 10) {
+                        throw new CompilerException("Erro Léxico: O identificador '" + lexema +
+                                " 'excede o limite máximo de 10 caracteres na linha " + linha);
+                    }
+
+                    if (tipo.name().equals("NUM") && lexema.length() > 10) {
+                        throw new CompilerException("Erro Léxico: O número '" + lexema +
+                                "' excede o limite máximo de 10 dígitos na linha " + linha);
+                    }
+
+                    if (tipo.name().equals("NUM_REAL")) {
+                        String[] partes = lexema.split("\\.");
+                        // Verifica a parte inteira (antes do ponto)
+                        if (partes[0].length() > 10) {
+                            throw new CompilerException("Erro Léxico: A parte inteira do número '" + lexema +
+                                    "' excede 10 dígitos na linha " + linha);
+                        }
+                        // Verifica a parte decimal (depois do ponto), se existir
+                        if (partes.length > 1 && partes[1].length() > 10) {
+                            throw new CompilerException("Erro Léxico: A parte decimal do número '" + lexema +
+                                    "' excede 10 dígitos na linha " + linha);
+                        }
+                    }
+
                     int colunaInicial = coluna;
                     int colunaFinal = coluna + lexema.length() - 1;
 

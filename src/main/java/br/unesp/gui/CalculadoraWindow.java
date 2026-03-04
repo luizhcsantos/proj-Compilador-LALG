@@ -12,24 +12,27 @@ import java.util.List;
 
 public class CalculadoraWindow extends JFrame {
 
-    private JTextArea editorArea;
-    private JTable tabelaLexemas;
-    private DefaultTableModel modeloTabela;
-    private JTextArea logArea;
-    private JTextArea sintaticaArea;
-    private JTabbedPane painelInferior;
+    private final JTextArea editorArea;
+    private final DefaultTableModel modeloTabela;
+    private final JTextArea logArea;
+    private final JTabbedPane painelInferior;
 
     public CalculadoraWindow() {
-        setTitle("IDE Compilador LALG");
+        setTitle("Compilador LALG");
         setSize(900, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
-        // 1. CRIAR BARRA DE MENUS
+        // BARRA DE MENUS
         JMenuBar menuBar = new JMenuBar();
         JMenu menuArquivo = new JMenu("Arquivo");
         JMenu menuEditar = new JMenu("Editar");
         JMenu menuCompilar = new JMenu("Compilar");
+
+        JMenuItem itemAbrirArquivo = new JMenuItem("Abrir Arquivo");
+        JMenuItem itemSalvarArquivo = new JMenuItem("Salvar Arquivo");
+        menuArquivo.add(itemAbrirArquivo);
+        menuArquivo.add(itemSalvarArquivo);
 
         JMenuItem itemCompilarLexico = new JMenuItem("Executar Análise Léxica");
         menuCompilar.add(itemCompilarLexico);
@@ -39,11 +42,11 @@ public class CalculadoraWindow extends JFrame {
         menuBar.add(menuCompilar);
         setJMenuBar(menuBar);
 
-        // 2. CRIAR ÁREA DO EDITOR (Parte Superior)
+        // ÁREA DO EDITOR (Parte Superior)
         JTabbedPane painelArquivos = new JTabbedPane();
         editorArea = new JTextArea();
         editorArea.setFont(new Font("Monospaced", Font.PLAIN, 16));
-        // Texto inicial para teste baseado na sua imagem
+        // Texto inicial para teste
         editorArea.setText("program soma;\n" +
                 "var a, b, soma : int;\n" +
                 "begin\n" +
@@ -54,31 +57,29 @@ public class CalculadoraWindow extends JFrame {
                 "   \n" +
                 "  ");
 
-        // JScrollPane adiciona barras de rolagem ao editor
         JScrollPane scrollEditor = new JScrollPane(editorArea);
         painelArquivos.addTab("Arquivo 1", scrollEditor);
 
-        // 3. CRIAR PAINEL INFERIOR (Tabelas e Logs)
+        // CRIAR PAINEL INFERIOR (Tabelas e Logs)
         painelInferior = new JTabbedPane();
 
-        // 3.1 Aba de Análise Sintática (vazia por enquanto)
-        sintaticaArea = new JTextArea();
+        // Aba de Análise Sintática (impkementada nu futuro próximo...)
+        JTextArea sintaticaArea = new JTextArea();
         sintaticaArea.setEditable(false);
         painelInferior.addTab("Análise Sintática", new JScrollPane(sintaticaArea));
 
-        // 3.2 Aba de Logs
+        // Aba de Logs
         logArea = new JTextArea();
         logArea.setEditable(false);
         logArea.setForeground(Color.RED); // Erros ficam em vermelho
         painelInferior.addTab("Logs de compilação", new JScrollPane(logArea));
 
-        // 3.3 Aba da Tabela de Lexemas
+        // Aba da Tabela de Lexemas
         String[] colunas = {"Lexema", "Token", "Linha", "Coluna Inicial", "Coluna Final"};
         modeloTabela = new DefaultTableModel(colunas, 0);
-        tabelaLexemas = new JTable(modeloTabela);
+        JTable tabelaLexemas = new JTable(modeloTabela);
         painelInferior.addTab("Tabela de lexemas", new JScrollPane(tabelaLexemas));
 
-        // 4. DIVISOR DE TELA (JSplitPane) - Separa o editor em cima e a tabela embaixo
         JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, painelArquivos, painelInferior);
         splitPane.setDividerLocation(350); // Altura onde o divisor começa
         splitPane.setResizeWeight(0.7);    // O editor cresce mais que a tabela se a janela for maximizada
@@ -89,6 +90,20 @@ public class CalculadoraWindow extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 executarAnaliseLexica();
+            }
+        });
+
+        itemAbrirArquivo.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                abrirArquivo();
+            }
+        });
+
+        itemSalvarArquivo.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                salvarArquivo();
             }
         });
 
@@ -109,17 +124,17 @@ public class CalculadoraWindow extends JFrame {
         }
 
         try {
-            // Instancia o Lexer que criamos com o código do editor
+            // Instancia o Lexer
             Lexer lexer = new Lexer(codigoFonte);
             List<Token> tokens = lexer.tokenize();
 
-            // Percorre a lista de tokens e preenche a Tabela (JTable)
+            // Percorre a lista de tokens e preenche a Tabela
             for (Token t : tokens) {
-                // Não precisamos mostrar o EOF na tabela para o usuário
+                // Não é neces´sario mostrar o EOF na tabela para o usuário
                 if (t.getToken() != null && !t.getToken().equals("EOF")) {
                     Object[] linhaTabela = {
                             t.getLexema(),
-                            t.getToken(),
+                            "<" + t.getToken() + ">",
                             t.getLinha(),
                             t.getColunaInicial(),
                             t.getColunaFinal()
@@ -141,6 +156,35 @@ public class CalculadoraWindow extends JFrame {
 
             // Foca automaticamente na aba de Logs para o usuário ler o erro
             painelInferior.setSelectedIndex(1);
+        }
+    }
+
+    private void abrirArquivo() {
+        JFileChooser fileChooser = new JFileChooser();
+        int resultado = fileChooser.showOpenDialog(this);
+
+        if (resultado == JFileChooser.APPROVE_OPTION) {
+            try {
+                String caminhoArquivo = fileChooser.getSelectedFile().getAbsolutePath();
+                String conteudo = new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(caminhoArquivo)));
+                editorArea.setText(conteudo);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Erro ao abrir o arquivo: " + ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    private void salvarArquivo() {
+        JFileChooser fileChooser = new JFileChooser();
+        int resultado = fileChooser.showSaveDialog(this);
+
+        if (resultado == JFileChooser.APPROVE_OPTION) {
+            try {
+                String caminhoArquivo = fileChooser.getSelectedFile().getAbsolutePath();
+                java.nio.file.Files.write(java.nio.file.Paths.get(caminhoArquivo), editorArea.getText().getBytes());
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Erro ao salvar o arquivo: " + ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+            }
         }
     }
 }
