@@ -18,6 +18,7 @@ public class CalculadoraWindow extends JFrame {
     private final JTextPane editorArea;
     private final JTextArea linhasArea;
     private final DefaultTableModel modeloTabela;
+    private final DefaultTableModel modeloTabelaSimbolos;
     private final JTextArea logArea;
     private final JTabbedPane painelInferior;
 
@@ -104,16 +105,33 @@ public class CalculadoraWindow extends JFrame {
 
         // Aba da Tabela de Lexemas
         String[] colunas = {"Lexema", "Token", "Linha", "Coluna Inicial", "Coluna Final"};
-        modeloTabela = new DefaultTableModel(colunas, 0);
+        modeloTabela = new DefaultTableModel(colunas, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+
         JTable tabelaLexemas = new JTable(modeloTabela);
+
         painelInferior.addTab("Tabela de lexemas", new JScrollPane(tabelaLexemas));
+
+        String[] colunasSimbolos = {"Símbolo", "Tipo"};
+        modeloTabelaSimbolos = new DefaultTableModel(colunasSimbolos, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+
+        JTable tabelaSimbolos = new JTable(modeloTabelaSimbolos);
+        painelInferior.addTab("Tabela de Símbolos", new JScrollPane(tabelaSimbolos));
 
         JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, painelArquivos, painelInferior);
         splitPane.setDividerLocation(350); // Altura onde o divisor começa
         splitPane.setResizeWeight(0.7);    // O editor cresce mais que a tabela se a janela for maximizada
         add(splitPane, BorderLayout.CENTER);
 
-        // 5. AÇÃO DE COMPILAR (O que acontece quando clica no menu)
         itemCompilarLexico.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -246,26 +264,40 @@ public class CalculadoraWindow extends JFrame {
 
             StyledDocument doc = editorArea.getStyledDocument();
 
-            // 1. Reseta tudo para Preto e sem negrito primeiro
+            // Reseta tudo para Preto e sem negrito primeiro
             Style estiloPadrao = editorArea.addStyle("Padrao", null);
             StyleConstants.setForeground(estiloPadrao, Color.BLACK);
             StyleConstants.setBold(estiloPadrao, false);
             doc.setCharacterAttributes(0, texto.length(), estiloPadrao, true);
 
-            // 2. Define o estilo das Palavras Reservadas (Azul e Negrito)
+            // Define o estilo das Palavras Reservadas (Azul e Negrito)
             Style estiloReservada = editorArea.addStyle("Reservada", null);
             StyleConstants.setForeground(estiloReservada, Color.BLUE);
             StyleConstants.setBold(estiloReservada, true);
 
-            // 3. Regex com todas as palavras reservadas da LALG
+            // Regex com todas as palavras reservadas da LALG
             String regexPAlavras = "\\b(program|begin|end|procedure|var|if|then|else|while|do|int|boolean|read|write|true|false|div|and|or|not)\\b";
             java.util.regex.Matcher matcher = java.util.regex.Pattern.compile(regexPAlavras).matcher(texto);
 
-            // 4. Procura palavras no textp e aplica a cor azul
+            // Procura palavras no textp e aplica a cor azul
             while (matcher.find()) {
                 doc.setCharacterAttributes(matcher.start(), matcher.end() - matcher.start(), estiloReservada, false);
             }
 
+        });
+    }
+
+    // Metodo público para que o Parser ou a Engine consigam inserir dados na tabela
+    public void adicionarSimbolo(String simbolo, String tipo, String categoria) {
+        SwingUtilities.invokeLater(() -> {
+            modeloTabelaSimbolos.addRow(new Object[]{simbolo, tipo, categoria});
+        });
+    }
+
+    // Metodo auxiliar para limpar a tabela antes de uma nova compilação
+    public void limparTabelaSimbolos() {
+        SwingUtilities.invokeLater(() -> {
+            modeloTabelaSimbolos.setRowCount(0);
         });
     }
 }
