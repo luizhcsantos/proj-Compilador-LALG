@@ -20,7 +20,7 @@ public class Lexer {
         int linha = 1;
         int coluna = 1;
 
-        // 1. Ignorar Espaços em branco e atualizar contadores de linha/coluna
+        // Ignorar Espaços em branco e atualizar contadores de linha/coluna
         while (pos < input.length()) {
             char c = input.charAt(pos);
 
@@ -34,7 +34,7 @@ public class Lexer {
                 pos++;
                 continue;
             }
-            // 2. Ignorar Comentários de Múltiplas Linhas { ... }
+            //Ignorar Comentários de Múltiplas Linhas { ... }
             if (c == '{') {
                 int colunaInicioComentario = coluna;
                 pos++;
@@ -64,7 +64,7 @@ public class Lexer {
                 continue;
             }
 
-            // 3. Ignprar Comentários de Linha Única // ...
+            // Ignprar Comentários de Linha Única // ...
             if (c == '/' && pos + 1 < input.length() && input.charAt(pos + 1) == '/') {
                 pos += 2; // Pula os dois caracteres
                 coluna += 2;
@@ -75,7 +75,7 @@ public class Lexer {
                 continue;
             }
 
-            // 4. Reconhecimento sos tokens via Regex
+            // Reconhecimento sos tokens via Regex
             String restoDaString = input.substring(pos);
             boolean tokenReconhecido = false;
 
@@ -121,7 +121,7 @@ public class Lexer {
                 }
             }
 
-            // 5. Tratamento de Erro Léxico
+            // Tratamento de Erro Léxico
             if (!tokenReconhecido) {
                 throw new CompilerException("Erro Léxico: Caractere não reconhecido '" + input.charAt(pos) +
                         "' na linha " + linha + ", coluna " + coluna);

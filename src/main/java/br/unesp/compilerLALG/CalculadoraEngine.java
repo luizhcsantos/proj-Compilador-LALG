@@ -18,15 +18,15 @@ public class CalculadoraEngine {
 
     public double calculate(String expression) throws CompilerException {
        try {
-           // 1. Lexer transforma a string em tokens
+           // Lexer transforma a string em tokens
            Lexer lexer = new Lexer(expression);
            List<Token> tokens = lexer.tokenize();
 
-           // 2. Parser transforma tokens em AST
+           // Parser transforma tokens em AST
            Parser parser = new Parser(tokens);
            ASTnode astRaiz = parser.parse();
 
-           // 3. Evaluator calcula o resultado da AST
+           // Evaluator calcula o resultado da AST
            evaluator eval = new evaluator();
 
 
