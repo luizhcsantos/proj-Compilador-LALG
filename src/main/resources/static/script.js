@@ -4,13 +4,11 @@ function atualizarEditor() {
     const lines = textarea.value.split('\n').length;
     const lineNumbers = document.getElementById('line-numbers');
     const lblLinhas = document.getElementById('lbl-linhas');
-    const lblTokens = document.getElementById('lbl-tokens');
 
     // Atualiza os números à esquerda
     lineNumbers.innerHTML = Array(lines).fill(0).map((_, i) => i + 1).join('<br>');
     // Atualiza o cartão do Dashboard com o núemro de linhas digitadas
     lblLinhas.innerHTML = `${lines} <span class="card-label">linhas digitadas</span>`;
-    // Atualiza o cartão do Dash board com o número de tokens
 
 }
 
@@ -21,16 +19,27 @@ function sincronizarScroll() {
 
 // Sistema de abas inferior
 function mudarAba(id) {
+    // Desativa todas as abas e conteúdos
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    event.target.classList.add('active');
-    document.getElementById(id).classList.add('active');
+
+    // Mostra o conteúdo da aba solicitada
+    document.getElementById(tabId).classList.add('active');
+
+    // Procura o botão da aba correspondente e ativa-o visualmente
+    const botaoAba = document.querySelector(`.tab[onclick*="${tabId}"]`);
+    if (botaoAba) {
+        botaoAba.classList.add('active');
+    }
 }
 
 // Atalho de teclado Ctrl + Enter
-document.addEventListener('keydown', function(e) {
+document.addEventListener('keydown', function (e) {
+
     if (e.ctrlKey && e.key === 'Enter') {
-        compilar();
+        compilar().then(r => {
+        }).catch(err => console.error(err));
+
     }
 });
 
@@ -52,15 +61,15 @@ async function compilar() {
         // Comunica com a porta 8080 do Spring Boot
         const resposta = await fetch('http://localhost:8080/api/compilar', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ codigo: codigoTexto })
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({codigo: codigoTexto})
         });
 
         const dados = await resposta.json();
 
         if (dados.sucesso) {
             painelLogs.innerHTML = `<div class="log-entry sucesso">✓ ${dados.mensagem}</div>`;
-            mudarAba('tab-logs'); // Foca nos logs
+            //mudarAba('tab-logs'); // Foca nos logs
 
             if (dados.tokens) {
                 // Remove o EOF da contagem visual para o usuário
@@ -86,6 +95,9 @@ async function compilar() {
             painelErros.innerHTML = `<div class="log-entry erro">✕ ${dados.mensagem}</div>`;
             painelLogs.innerHTML = `<div class="log-entry erro">Compilação abortada com erros.</div>`;
             mudarAba('tab-erros'); // Foca na aba de erros automaticamente
+
+            // Força a tela a voltar para o código fonte para o utilizador corrigir o erro
+            mostrarVisao('visao-editor', 'card-editor');
         }
     } catch (erro) {
         painelErros.innerHTML = `<div class="log-entry erro">✕ Erro de Conexão: O servidor Spring Boot está ligado? (${erro.message})</div>`;
@@ -96,7 +108,7 @@ async function compilar() {
 // Inicializa o contador de linhas ao carregar a página
 window.onload = atualizarEditor;
 
-function novoArquivo(){
+function novoArquivo() {
 
     if (confirm("Deseja criar um novo arquivo? O código atual não salvo será perdido")) {
         document.getElementById('codigo-fonte').value = '';
@@ -123,7 +135,7 @@ function abrirArquivo(event) {
         document.getElementById('codigo-fonte').value = e.target.result;
         atualizarEditor();
         document.getElementById('painel-logs').innerHTML = `<div class="log-entry sucesso">✓ Arquivo '${arquivo.name}' carregado com sucesso.</div>`;
-        mudarAba('tab-logs');
+        //mudarAba('tab-logs');
     };
 
     leitor.readAsText(arquivo);
@@ -140,7 +152,7 @@ function salvarArquivo() {
     }
 
     // Cria um blob com o texto
-    const blob = new Blob([texto], { type: 'text/plain' });
+    const blob = new Blob([texto], {type: 'text/plain'});
 
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
@@ -152,4 +164,29 @@ function salvarArquivo() {
     // Limpa a memória
     document.body.removeChild(link);
     URL.revokeObjectURL(link.href);
+}
+
+// ==========================================
+// CONTROLE DE VISUALIZAÇÃO PRINCIPAL (VIEWS)
+// ==========================================
+function mostrarVisao(visaoId, cardId) {
+    // Esconde todas as visões da área principal
+    document.getElementById('visao-editor').style.display = 'none';
+    document.getElementById('visao-lexemas').style.display = 'none';
+    document.getElementById('visao-simbolos').style.display = 'none';
+
+    // Mostra apenas a visão solicitada
+    if(visaoId === 'visao-editor') {
+        document.getElementById(visaoId).style.display = 'flex';
+    } else {
+        document.getElementById(visaoId).style.display = 'block';
+    }
+
+    // Remove a classe 'destaque' de todos os cartões do dashboard
+    document.querySelectorAll('.card-clickable').forEach(card => {
+        card.classList.remove('destaque');
+    });
+
+    // Pinta o cartão que acabou de ser clicado
+    document.getElementById(cardId).classList.add('destaque');
 }

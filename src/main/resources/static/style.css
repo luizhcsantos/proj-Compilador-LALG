@@ -34,6 +34,10 @@ button { cursor: pointer; font-family: inherit; border: none; background: none; 
 
 .card { background-color: var(--bg-card); border-radius: 16px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.02); display: flex; flex-direction: column; position: relative; }
 .card.destaque { background-color: var(--bg-card-destaque); }
+.card-clickable { cursor: pointer; transition: transform 0.2s, box-shadow 0.2s, border 0.2s; border: 2px solid transparent; }
+.card-clickable:hover { transform: translateY(-3px); box-shadow: 0 6px 15px rgba(0,0,0,0.05); }
+.card { background-color: var(--bg-card); }
+.card.destaque { background-color: var(--bg-card-destaque); border-color: var(--cor-primaria); }
 
 .card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; font-weight: 600; font-size: 18px; }
 .card-icon { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 16px; }
@@ -85,3 +89,24 @@ tr:hover { background-color: #f5eeed; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #d9cfcd; border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: #bcaeaa; }
+
+/* ===== MAIN DISPLAY AREA (Troca de Visões) ===== */
+.main-display-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+/* Formatação do container das tabelas quando elas estão ativas */
+.tabela-container {
+    flex: 1;
+    background-color: var(--bg-main);
+    border: 1px solid var(--borda);
+    border-radius: 12px;
+    overflow-y: auto;
+}
+
+/* Garante que o cabeçalho da tabela fique fixo no topo ao rolar para baixo */
+th {
+    position: sticky;
+    top: 0;
+    background: var(--bg-main);
+    z-index: 10;
+    box-shadow: 0 1px 0 var(--borda);
+}
