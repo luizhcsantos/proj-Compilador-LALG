@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LALG Studio</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap"
+          rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="sidebar">
+    <div style="margin-bottom: 30px; font-size: 24px;">≡</div>
+    <button class="sidebar-item active">
+        <span class="sidebar-icon">🏠</span>
+        Início
+    </button>
+</nav>
+
+<div class="app-content">
+    <div class="dashboard-col">
+
+        <div class="card destaque">
+            <div class="card-header">
+                <div class="card-icon" style="background: #e28e83;">&lt;&gt;</div>
+                Código-fonte
+            </div>
+            <div class="card-number" id="lbl-linhas">
+                0 <span class="card-label">linhas digitadas</span>
+            </div>
+        </div>
+
+        <div class="section-title">Análise</div>
+
+        <div class="row-cards">
+            <div class="card">
+                <div class="card-header" style="font-size: 15px;">
+                    <div class="card-icon" style="background: #a390eb;">🏷️</div>
+                    Análise léxica
+                </div>
+                <div class="card-number" id="lbl-tokens">
+                    0 <span class="card-label">tokens</span>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header" style="font-size: 15px;">
+                    <div class="card-icon" style="background: #8aa9e8;">☰</div>
+                    Símbolos
+                </div>
+                <div class="card-number">
+                    0 <span class="card-label">símbolos</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="card-icon" style="background: #a5d688;">🧩</div>
+                Análise sintática
+            </div>
+            <div class="card-number">
+                - <span class="card-label">nós (Em breve)</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="card-icon" style="background: #f1c754;">📐</div>
+                Análise semântica
+            </div>
+            <div class="card-number">
+                - <span class="card-label">identificadores</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="workspace-col">
+        <div class="toolbar">
+            <div class="menu-actions">
+                <span onclick="novoArquivo()">Novo</span>
+                <span onclick="document.getElementById('input-arquivo').click()">Abrir</span>
+                <span onclick="salvarArquivo()">Salvar</span>
+            </div>
+            <input type="file" id="input-arquivo" style="display: none;" accept=".txt, .lalg, .pas" onchange="abrirArquivo(event)">
+            <button class="btn-compilar" onclick="compilar()">
+                Compilar <span class="btn-hint">ctrl + enter</span>
+            </button>
+        </div>
+
+        <div class="editor-container">
+            <div class="line-numbers" id="line-numbers">1</div>
+            <textarea id="codigo-fonte" spellcheck="false" oninput="atualizarEditor()" onscroll="sincronizarScroll()">program soma;
+                // comentário de linha única
+                int a, b, soma;
+                begin
+                  a := 10;
+                  b := 15;
+                  { comentário em bloco }
+                  soma := a + b;
+                end.
+            </textarea>
+        </div>
+
+        <div class="console-panel">
+            <div class="tabs">
+                <button class="tab" onclick="mudarAba('tab-erros')">Erros</button>
+                <button class="tab active" onclick="mudarAba('tab-logs')">Logs</button>
+                <button class="tab" onclick="mudarAba('tab-lexemas')">Tabela de Lexemas</button>
+            </div>
+
+            <div id="tab-erros" class="tab-content">
+                <div id="painel-erros"
+                     style="color: var(--texto-cinza); font-size: 14px; text-align: center; margin-top: 20px;">Nenhum
+                    erro encontrado.
+                </div>
+            </div>
+
+            <div id="tab-logs" class="tab-content active">
+                <div id="painel-logs">
+                    <div class="log-entry">Aguardando compilação...</div>
+                </div>
+            </div>
+
+            <div id="tab-lexemas" class="tab-content">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Lexema</th>
+                        <th>Token</th>
+                        <th>Linha</th>
+                        <th>Col. Inicial</th>
+                        <th>Col. Final</th>
+                    </tr>
+                    </thead>
+                    <tbody id="tabela-corpo">
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: var(--texto-cinza);">Compile o código para
+                            gerar lexemas.
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

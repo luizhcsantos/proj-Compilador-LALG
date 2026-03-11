@@ -1,0 +1,87 @@
+/* ===== VARIÁVEIS DE COR ===== */
+:root {
+    --bg-main: #fcf8f7;
+    --bg-sidebar: #ffffff;
+    --bg-card: #ffffff;
+    --bg-card-destaque: #ffc4be;
+    --cor-primaria: #f4a397;
+    --cor-primaria-hover: #e88d80;
+    --texto-escuro: #4a3f3f;
+    --texto-cinza: #8c8282;
+    --borda: #f0e6e5;
+    --erro-bg: #ffe6e6;
+    --erro-texto: #d32f2f;
+    --sucesso-bg: #e8f5e9;
+    --sucesso-texto: #2e7d32;
+}
+
+/* ===== RESET E BASE ===== */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', sans-serif; background-color: var(--bg-main); color: var(--texto-escuro); display: flex; height: 100vh; overflow: hidden; }
+button { cursor: pointer; font-family: inherit; border: none; background: none; }
+
+/* ===== LAYOUT PRINCIPAL ===== */
+.sidebar { width: 70px; background-color: var(--bg-sidebar); border-right: 1px solid var(--borda); display: flex; flex-direction: column; align-items: center; padding: 20px 0; }
+.sidebar-item { width: 50px; height: 50px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 15px; color: var(--texto-cinza); font-size: 11px; font-weight: 500; transition: 0.2s; }
+.sidebar-item.active { background-color: var(--bg-card-destaque); color: var(--texto-escuro); }
+.sidebar-icon { font-size: 20px; margin-bottom: 4px; }
+
+.app-content { flex: 1; display: flex; padding: 20px; gap: 20px; overflow: hidden; }
+
+/* ===== COLUNA ESQUERDA (DASHBOARD) ===== */
+.dashboard-col { width: 350px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; padding-right: 5px; }
+.section-title { font-size: 14px; color: var(--texto-cinza); font-weight: 600; margin: 10px 0 5px 0; text-align: center; }
+
+.card { background-color: var(--bg-card); border-radius: 16px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.02); display: flex; flex-direction: column; position: relative; }
+.card.destaque { background-color: var(--bg-card-destaque); }
+
+.card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; font-weight: 600; font-size: 18px; }
+.card-icon { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 16px; }
+
+.card-number { font-size: 42px; font-weight: 400; display: flex; align-items: baseline; gap: 8px; }
+.card-label { font-size: 14px; font-weight: 500; color: var(--texto-cinza); }
+
+.row-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+
+/* ===== COLUNA DIREITA (EDITOR E CONSOLE) ===== */
+.workspace-col { flex: 1; display: flex; flex-direction: column; gap: 15px; min-width: 0; }
+
+.toolbar { display: flex; justify-content: space-between; align-items: center; padding: 0 10px; }
+.menu-actions { display: flex; gap: 20px; color: var(--texto-escuro); font-size: 14px; font-weight: 500; }
+.menu-actions span { cursor: pointer; transition: color 0.2s; }
+.menu-actions span:hover { color: var(--cor-primaria-hover); }
+
+.btn-compilar { background-color: var(--cor-primaria); color: var(--texto-escuro); padding: 10px 24px; border-radius: 20px; font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 10px rgba(244, 163, 151, 0.3); transition: 0.2s; }
+.btn-compilar:hover { background-color: var(--cor-primaria-hover); transform: translateY(-1px); }
+.btn-hint { font-size: 11px; opacity: 0.7; font-weight: 400; }
+
+.editor-container { flex: 1; background-color: var(--bg-main); border: 1px solid var(--borda); border-radius: 12px; display: flex; overflow: hidden; position: relative; }
+.line-numbers { padding: 15px 10px; text-align: right; color: #bcaeaa; background-color: var(--bg-main); font-family: 'Fira Code', monospace; font-size: 15px; line-height: 1.5; user-select: none; border-right: 1px solid var(--borda); }
+#codigo-fonte { flex: 1; padding: 15px; border: none; background: transparent; color: var(--texto-escuro); font-family: 'Fira Code', monospace; font-size: 15px; line-height: 1.5; resize: none; outline: none; white-space: pre; }
+
+/* ===== PAINEL INFERIOR (ABAS) ===== */
+.console-panel { height: 250px; background-color: var(--bg-main); border-top: 2px solid var(--borda); display: flex; flex-direction: column; }
+.tabs { display: flex; border-bottom: 1px solid var(--borda); }
+.tab { padding: 12px 24px; font-size: 14px; font-weight: 600; color: var(--texto-cinza); border-bottom: 2px solid transparent; transition: 0.2s; }
+.tab.active { color: var(--texto-escuro); border-bottom-color: var(--texto-escuro); }
+.tab:hover { color: var(--texto-escuro); }
+
+.tab-content { flex: 1; overflow-y: auto; padding: 15px; display: none; }
+.tab-content.active { display: block; }
+
+.log-entry { padding: 10px; border-radius: 6px; margin-bottom: 8px; font-family: 'Fira Code', monospace; font-size: 13px; border-left: 4px solid var(--borda); }
+.log-entry.erro { background-color: var(--erro-bg); color: var(--erro-texto); border-left-color: var(--erro-texto); }
+.log-entry.sucesso { background-color: var(--sucesso-bg); color: var(--sucesso-texto); border-left-color: var(--sucesso-texto); }
+
+/* ===== TABELA ===== */
+table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+th { color: var(--texto-cinza); font-weight: 600; padding: 10px; border-bottom: 1px solid var(--borda); position: sticky; top: 0; background: var(--bg-main); }
+td { padding: 10px; border-bottom: 1px solid var(--borda); font-family: 'Fira Code', monospace; }
+tr:hover { background-color: #f5eeed; }
+.token-tag { background: #eef2ff; color: #4f46e5; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+
+/* ===== SCROLLBAR CUSTOMIZADA ===== */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d9cfcd; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #bcaeaa; }

@@ -1,5 +1,8 @@
 package br.unesp.compilerLALG.lexer;
 
+import br.unesp.compilerLALG.core.lexer.Lexer;
+import br.unesp.compilerLALG.core.lexer.Token;
+
 import java.util.List;
 
 public class LexerTest {

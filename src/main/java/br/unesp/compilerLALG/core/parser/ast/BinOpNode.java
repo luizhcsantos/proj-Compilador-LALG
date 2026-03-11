@@ -1,4 +1,4 @@
-package br.unesp.compilerLALG.parser.ast;
+package br.unesp.compilerLALG.core.parser.ast;
 
 public class BinOpNode extends ASTnode {
 

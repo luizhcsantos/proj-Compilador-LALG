@@ -1,10 +1,9 @@
-package br.unesp.compilerLALG.parser;
+package br.unesp.compilerLALG.core.parser;
 
-import br.unesp.compilerLALG.lexer.TipoToken;
-import br.unesp.compilerLALG.lexer.Token;
-import br.unesp.compilerLALG.parser.ast.ASTnode;
-import br.unesp.compilerLALG.parser.ast.BinOpNode;
-import br.unesp.compilerLALG.parser.ast.NumNode;
+import br.unesp.compilerLALG.core.lexer.Token;
+import br.unesp.compilerLALG.core.parser.ast.ASTnode;
+import br.unesp.compilerLALG.core.parser.ast.BinOpNode;
+import br.unesp.compilerLALG.core.parser.ast.NumNode;
 
 import java.util.List;
 

@@ -1,4 +1,4 @@
-package br.unesp.compilerLALG.lexer;
+package br.unesp.compilerLALG.core.lexer;
 
 public class Token {
 

@@ -1,14 +1,13 @@
 package br.unesp.compilerLALG;
 
 import br.unesp.compilerLALG.exception.CompilerException;
-import br.unesp.compilerLALG.lexer.Lexer;
-import br.unesp.compilerLALG.lexer.Token;
-import br.unesp.compilerLALG.parser.Parser;
-import br.unesp.compilerLALG.parser.ast.ASTnode;
-import br.unesp.compilerLALG.parser.ast.BinOpNode;
-import br.unesp.compilerLALG.parser.ast.NumNode;
+import br.unesp.compilerLALG.core.lexer.Lexer;
+import br.unesp.compilerLALG.core.lexer.Token;
+import br.unesp.compilerLALG.core.parser.Parser;
+import br.unesp.compilerLALG.core.parser.ast.ASTnode;
+import br.unesp.compilerLALG.core.parser.ast.BinOpNode;
+import br.unesp.compilerLALG.core.parser.ast.NumNode;
 
-import java.util.Arrays;
 import java.util.List;
 
 public class CalculadoraEngine {

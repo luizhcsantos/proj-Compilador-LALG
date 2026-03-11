@@ -1,7 +1,7 @@
 package br.unesp.gui;
 
-import br.unesp.compilerLALG.lexer.Lexer;
-import br.unesp.compilerLALG.lexer.Token;
+import br.unesp.compilerLALG.core.lexer.Lexer;
+import br.unesp.compilerLALG.core.lexer.Token;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
