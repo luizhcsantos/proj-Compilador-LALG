@@ -56,7 +56,7 @@ public class CalculadoraWindow extends JFrame {
             }
         };
         editorArea.setFont(new Font("Monospaced", Font.PLAIN, 16));
-        editorArea.setText("program teste;\nvar x: int;\nbegin\n   x := 10;\nend.");
+        //editorArea.setText("program teste;\nvar x: int;\nbegin\n   x := 10;\nend.");
 
         linhasArea = new JTextArea("1");
         linhasArea.setBackground(new Color(240, 240, 240));
@@ -95,7 +95,7 @@ public class CalculadoraWindow extends JFrame {
         // Aba de Análise Sintática (impkementada num futuro próximo...)
         JTextArea sintaticaArea = new JTextArea();
         sintaticaArea.setEditable(false);
-        //painelInferior.addTab("Análise Sintática", new JScrollPane(sintaticaArea));
+        painelInferior.addTab("Análise Sintática", new JScrollPane(sintaticaArea));
 
         // Aba de Logs
         logArea = new JTextArea();
@@ -236,7 +236,7 @@ public class CalculadoraWindow extends JFrame {
 
     private void atualizarEditor() {
 
-        // Aplica a cor azul nas palavras reservadas
+        // Aplica diferentes estilos nas palavras de acordo com o tipo d etexto
         aplicarSyntaxHighlighting();
 
         // Calciula e desenha os números de linha
@@ -282,6 +282,17 @@ public class CalculadoraWindow extends JFrame {
             // Procura palavras no textp e aplica a cor azul
             while (matcher.find()) {
                 doc.setCharacterAttributes(matcher.start(), matcher.end() - matcher.start(), estiloReservada, false);
+            }
+
+            Style estiloComentario = editorArea.addStyle("Comentario", null);
+            StyleConstants.setForeground(estiloComentario, new Color(0, 128, 0)); // Verde escuro para comentários
+            StyleConstants.setItalic(estiloComentario, true);
+
+            String regexComent = "//.*|\\{[^}]*}?"; // Comentários de linha (//) ou bloco ({...})
+            java.util.regex.Matcher matcherComent = java.util.regex.Pattern.compile(regexComent).matcher(texto);
+
+            while (matcherComent.find()) {
+                doc.setCharacterAttributes(matcherComent.start(), matcherComent.end() - matcherComent.start(), estiloComentario, false);
             }
 
         });
