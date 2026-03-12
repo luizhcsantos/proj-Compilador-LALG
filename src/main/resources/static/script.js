@@ -79,7 +79,7 @@ async function compilar() {
                 // Atualiza o Dashboard
                 lblTokens.innerHTML = `${tokensReais.length} <span class="card-label">tokens</span>`;
 
-                // Preenche a Tabela
+                // Preenche a Tabela de lexemas
                 tokensReais.forEach(t => {
                     tabelaCorpo.innerHTML += `
                         <tr>
@@ -90,6 +90,33 @@ async function compilar() {
                             <td>${t.colunaFinal}</td>
                         </tr>`;
                 });
+
+                const tabelaSimbolosCorpo = document.getElementById('tabela-simbolos-corpo');
+                tabelaSimbolosCorpo.innerHTML = '';
+                const identificadoresUnicos = new Set();
+                const simbolos = [];
+
+                tokensReais.forEach(t => {
+                    if (t.token === "IDENTIFICADOR" && !identificadoresUnicos.has(t.lexema)) {
+                        identificadoresUnicos.add(t.lexema);
+                        simbolos.push(t.lexema);
+                    }
+                });
+                document.getElementById('lbl-simbolos').innerHTML = `${simbolos.length} <span class="card-label">símbolos</span>`;
+
+                // Desenha os identificadores na Tabela de Símbolos
+                if (simbolos.length > 0) {
+                    simbolos.forEach(simbolo => {
+                        tabelaSimbolosCorpo.innerHTML += `
+                            <tr>
+                                <td style="font-weight: 600; color: var(--cor-primaria);">${simbolo}</td>
+                                <td><span style="color: var(--texto-cinza); font-style: italic;">Aguardando Parser...</span></td>
+                                <td><span style="color: var(--texto-cinza); font-style: italic;">Aguardando Parser...</span></td>
+                            </tr>`;
+                    });
+                } else {
+                    tabelaSimbolosCorpo.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--texto-cinza);">Nenhum identificador encontrado no código.</td></tr>`;
+                }
             }
         } else {
             // Trata o Erro Léxico
