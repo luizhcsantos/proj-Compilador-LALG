@@ -18,10 +18,11 @@ function sincronizarScroll() {
 }
 
 // Sistema de abas inferior
-function mudarAba() {
+function mudarAba(tabId) {
     // Desativa todas as abas e conteúdos
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
 
     // Mostra o conteúdo da aba solicitada
     document.getElementById(tabId).classList.add('active');
