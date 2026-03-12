@@ -18,7 +18,7 @@ function sincronizarScroll() {
 }
 
 // Sistema de abas inferior
-function mudarAba(id) {
+function mudarAba() {
     // Desativa todas as abas e conteúdos
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -96,7 +96,7 @@ async function compilar() {
             painelLogs.innerHTML = `<div class="log-entry erro">Compilação abortada com erros.</div>`;
             mudarAba('tab-erros'); // Foca na aba de erros automaticamente
 
-            // Força a tela a voltar para o código fonte para o utilizador corrigir o erro
+            // Força a tela a voltar para o código-fonte para o utilizador corrigir o erro
             mostrarVisao('visao-editor', 'card-editor');
         }
     } catch (erro) {
@@ -166,9 +166,7 @@ function salvarArquivo() {
     URL.revokeObjectURL(link.href);
 }
 
-// ==========================================
-// CONTROLE DE VISUALIZAÇÃO PRINCIPAL (VIEWS)
-// ==========================================
+// controle de visualização principal (Views)
 function mostrarVisao(visaoId, cardId) {
     // Esconde todas as visões da área principal
     document.getElementById('visao-editor').style.display = 'none';
@@ -190,3 +188,44 @@ function mostrarVisao(visaoId, cardId) {
     // Pinta o cartão que acabou de ser clicado
     document.getElementById(cardId).classList.add('destaque');
 }
+
+// Escolha de temas de cores
+const iconesTemas = {
+    'claro': '☀️',
+    'escuro': '🌙',
+    'dracula': '🧛'
+};
+
+
+// Mostra ou esconde o menu
+function toggleMenuTemas(event) {
+    event.stopPropagation(); // Impede que o clique feche o menu imediatamente
+    document.getElementById('menu-temas').classList.toggle('show');
+}
+
+function setTema(nomeTema) {
+    document.documentElement.setAttribute('data-theme', nomeTema);
+    document.getElementById('icone-tema').innerText = iconesTemas[nomeTema];
+
+    localStorage.setItem('temaCompiladorLALG', nomeTema);
+
+    document.getElementById('menu-temas').classList.remove('show');
+}
+
+// fecha o menu se o utilizador clicar em qqr outro lugar
+document.addEventListener('click', function (event) {
+    const menu = document.getElementById('menu-temas');
+    if (menu.classList.contains('show') && !event.target.closest('.theme-container')) {
+        menu.classList.remove('show');
+    }
+});
+
+// carrega automaticamente o tema salvo ao abrir a página
+document.addEventListener('DOMContentLoaded', () => {
+    let temaSalvo = localStorage.getItem('temaCompiladorLALG');
+    if (!temaSalvo) temaSalvo = 'claro';
+
+    document.documentElement.setAttribute('data-theme', temaSalvo);
+    document.getElementById('icone-tema').innerText = iconesTemas[temaSalvo];
+
+});

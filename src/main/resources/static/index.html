@@ -12,6 +12,19 @@
 <nav class="sidebar">
     <div style="margin-bottom: 30px; font-size: 24px;">≡</div>
     <button class="sidebar-item active"><span class="sidebar-icon">🏠</span>Início</button>
+
+    <div class="theme-container">
+        <button class="sidebar-item" onclick="toggleMenuTemas(event)" id="btn-tema">
+            <span class="sidebar-icon" id="icone-tema">🎨</span>
+            Tema
+        </button>
+
+        <div id="menu-temas" class="theme-menu">
+            <div class="theme-option" onclick="setTema('claro')">☀️ Claro</div>
+            <div class="theme-option" onclick="setTema('escuro')">🌙 Escuro</div>
+            <div class="theme-option" onclick="setTema('dracula')">🧛 Dracula</div>
+        </div>
+    </div>
 </nav>
 
 <div class="app-content">

@@ -1,5 +1,5 @@
-/* ===== VARIÁVEIS DE COR ===== */
-:root {
+/*esuqemas de cores */
+[data-theme="claro"] {
     --bg-main: #fcf8f7;
     --bg-sidebar: #ffffff;
     --bg-card: #ffffff;
@@ -15,12 +15,51 @@
     --sucesso-texto: #2e7d32;
 }
 
-/* ===== RESET E BASE ===== */
+[data-theme="escuro"] {
+    --bg-main: #1e1e1e;
+    --bg-sidebar: #252526;
+    --bg-card: #2d2d30;
+    --bg-card-destaque: #094771;
+    --cor-primaria: #0e639c;
+    --cor-primaria-hover: #1177bb;
+    --texto-escuro: #d4d4d4;
+    --texto-cinza: #858585;
+    --borda: #3e3e42;
+    --erro-bg: #5a1d1d;
+    --erro-texto: #f48771;
+    --sucesso-bg: #1e4620;
+    --sucesso-texto: #89d185;
+}
+
+[data-theme="dracula"] {
+    --bg-main: #282a36;
+    --bg-sidebar: #21222c;
+    --bg-card: #44475a;
+    --bg-card-destaque: #6272a4;
+    --cor-primaria: #bd93f9;
+    --cor-primaria-hover: #ff79c6;
+    --texto-escuro: #f8f8f2;
+    --texto-cinza: #6272a4;
+    --borda: #21222c;
+    --erro-bg: #ff555540;
+    --erro-texto: #ff5555;
+    --sucesso-bg: #50fa7b40;
+    --sucesso-texto: #50fa7b;
+}
+
+/* Transição suave para todas as mudanças de cor */
+* {
+    transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+}
+
+
+
+/* reset e base */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Inter', sans-serif; background-color: var(--bg-main); color: var(--texto-escuro); display: flex; height: 100vh; overflow: hidden; }
 button { cursor: pointer; font-family: inherit; border: none; background: none; }
 
-/* ===== LAYOUT PRINCIPAL ===== */
+/* layout principal */
 .sidebar { width: 70px; background-color: var(--bg-sidebar); border-right: 1px solid var(--borda); display: flex; flex-direction: column; align-items: center; padding: 20px 0; }
 .sidebar-item { width: 50px; height: 50px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 15px; color: var(--texto-cinza); font-size: 11px; font-weight: 500; transition: 0.2s; }
 .sidebar-item.active { background-color: var(--bg-card-destaque); color: var(--texto-escuro); }
@@ -28,7 +67,7 @@ button { cursor: pointer; font-family: inherit; border: none; background: none; 
 
 .app-content { flex: 1; display: flex; padding: 20px; gap: 20px; overflow: hidden; }
 
-/* ===== COLUNA ESQUERDA (DASHBOARD) ===== */
+/* coluna esquerda (dashoboard) */
 .dashboard-col { width: 350px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; padding-right: 5px; }
 .section-title { font-size: 14px; color: var(--texto-cinza); font-weight: 600; margin: 10px 0 5px 0; text-align: center; }
 
@@ -47,7 +86,7 @@ button { cursor: pointer; font-family: inherit; border: none; background: none; 
 
 .row-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
 
-/* ===== COLUNA DIREITA (EDITOR E CONSOLE) ===== */
+/* coluna direita (editor e console) */
 .workspace-col { flex: 1; display: flex; flex-direction: column; gap: 15px; min-width: 0; }
 
 .toolbar { display: flex; justify-content: space-between; align-items: center; padding: 0 10px; }
@@ -63,7 +102,7 @@ button { cursor: pointer; font-family: inherit; border: none; background: none; 
 .line-numbers { padding: 15px 10px; text-align: right; color: #bcaeaa; background-color: var(--bg-main); font-family: 'Fira Code', monospace; font-size: 15px; line-height: 1.5; user-select: none; border-right: 1px solid var(--borda); }
 #codigo-fonte { flex: 1; padding: 15px; border: none; background: transparent; color: var(--texto-escuro); font-family: 'Fira Code', monospace; font-size: 15px; line-height: 1.5; resize: none; outline: none; white-space: pre; }
 
-/* ===== PAINEL INFERIOR (ABAS) ===== */
+/* painel inferior (Abas) */
 .console-panel { height: 250px; background-color: var(--bg-main); border-top: 2px solid var(--borda); display: flex; flex-direction: column; }
 .tabs { display: flex; border-bottom: 1px solid var(--borda); }
 .tab { padding: 12px 24px; font-size: 14px; font-weight: 600; color: var(--texto-cinza); border-bottom: 2px solid transparent; transition: 0.2s; }
@@ -77,20 +116,20 @@ button { cursor: pointer; font-family: inherit; border: none; background: none; 
 .log-entry.erro { background-color: var(--erro-bg); color: var(--erro-texto); border-left-color: var(--erro-texto); }
 .log-entry.sucesso { background-color: var(--sucesso-bg); color: var(--sucesso-texto); border-left-color: var(--sucesso-texto); }
 
-/* ===== TABELA ===== */
+/* tabela */
 table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
 th { color: var(--texto-cinza); font-weight: 600; padding: 10px; border-bottom: 1px solid var(--borda); position: sticky; top: 0; background: var(--bg-main); }
 td { padding: 10px; border-bottom: 1px solid var(--borda); font-family: 'Fira Code', monospace; }
 tr:hover { background-color: #f5eeed; }
 .token-tag { background: #eef2ff; color: #4f46e5; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
 
-/* ===== SCROLLBAR CUSTOMIZADA ===== */
+/*customziação da scrollbar*/
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #d9cfcd; border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: #bcaeaa; }
 
-/* ===== MAIN DISPLAY AREA (Troca de Visões) ===== */
+/* troca de views */
 .main-display-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 
 /* Formatação do container das tabelas quando elas estão ativas */
@@ -102,11 +141,56 @@ tr:hover { background-color: #f5eeed; }
     overflow-y: auto;
 }
 
-/* Garante que o cabeçalho da tabela fique fixo no topo ao rolar para baixo */
+/* garante que o cabeçalho da tabela fique fixo no topo ao rolar para baixo */
 th {
     position: sticky;
     top: 0;
     background: var(--bg-main);
     z-index: 10;
     box-shadow: 0 1px 0 var(--borda);
+}
+
+.theme-container {
+    position: relative;
+    display: flex;
+    width: 100%;
+    justify-content: center;
+}
+
+.theme-menu {
+    display: none; /*escondido por padrão*/
+    position: absolute;
+    top: 0;
+    left: 70px; /*faz o menu aparecer fora da barra lateral*/
+    background-color: var(--bg-card);
+    border: 1px solid var(--borda);
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    width: 170px;
+    z-index: 100;
+    overflow: hidden;
+}
+
+.theme-menu.show {
+    display: block;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.theme-option {
+    padding: 12px 15px;
+    font-size: 13px;
+    color: var(--texto-escuro);
+    cursor: pointer;
+    transition: background 0.2s;
+    font-weight: 500;
+}
+
+.theme-option:hover{
+    background-color: var(--bg-main);
+    color: var(--cor-primaria);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateX(-10px); }
+    to { opacity: 1; transform: translateX(0); }
 }
