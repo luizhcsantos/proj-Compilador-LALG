@@ -38,7 +38,7 @@ function mudarAba(tabId) {
 document.addEventListener('keydown', function (e) {
 
     if (e.ctrlKey && e.key === 'Enter') {
-        compilar().then(r => {
+        compilar().then(() => {
         }).catch(err => console.error(err));
 
     }
