@@ -4,11 +4,11 @@ public class Token {
 
     private String token;
     private String lexema;
-    private String linha;
+    private int linha;
     private int colunaInicial;
     private int colunaFinal;
 
-    public Token(String tipo, String value, String linha, int colunaInicial, int colunaFinal) {
+    public Token(String tipo, String value, int linha, int colunaInicial, int colunaFinal) {
         this.token = tipo;
         this.lexema = value;
         this.linha = linha;
@@ -37,11 +37,11 @@ public class Token {
         this.lexema = lexema;
     }
 
-    public String getLinha() {
+    public int getLinha() {
         return linha;
     }
 
-    public void setLinha(String linha) {
+    public void setLinha(int linha) {
         this.linha = linha;
     }
 

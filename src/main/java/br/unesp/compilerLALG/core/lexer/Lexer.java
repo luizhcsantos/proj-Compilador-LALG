@@ -112,7 +112,7 @@ public class Lexer {
                     int colunaInicial = coluna;
                     int colunaFinal = coluna + lexema.length() - 1;
 
-                    tokens.add(new Token(tipo.name(), lexema, String.valueOf(linha), colunaInicial, colunaFinal));
+                    tokens.add(new Token(tipo.name(), lexema, linha, colunaInicial, colunaFinal));
 
                     pos += lexema.length();
                     coluna += lexema.length();
@@ -128,7 +128,7 @@ public class Lexer {
             }
         }
         // Adiciona o token finalizador
-        tokens.add(new Token("EOF", "EOF", String.valueOf(linha), coluna, coluna));
+        tokens.add(new Token("EOF", "EOF", linha, coluna, coluna));
         return tokens;
 
     }
