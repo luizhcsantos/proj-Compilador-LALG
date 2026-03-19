@@ -17,27 +17,26 @@ public class CompiladorController {
     public CompilacaoResponse compilaCodigo(@RequestBody CompilacaoRequest request) {
 
         if (request.getCodigo() == null || request.getCodigo().trim().isEmpty()) {
-            return new CompilacaoResponse(false, "Código não pode ser vazio", null);
+            return new CompilacaoResponse(false,
+                    "Código não pode ser vazio", null, null);
         }
 
-        try {
-            Lexer lexer = new Lexer(request.getCodigo());
-            List<Token> tokens = lexer.tokenize();
 
-            // Devolve a resposta de sucesso
-            return new CompilacaoResponse(
-                    true,
-                    "Análise Léxica concluída com sucesso! " + tokens.size() + " tokens encontrados.",
-                    tokens
-            );
+        Lexer lexer = new Lexer(request.getCodigo());
+        List<Token> tokens = lexer.tokenize();
 
-        } catch (Exception ex) {
-            return new CompilacaoResponse(
-                    false,
-                    "FALHA NA COMPILAÇÃO: " + ex.getMessage(),
-                    null
-            );
+        if (lexer.temErros()) {
+            List<String> mensagensErro = lexer.getErros().stream().
+                    map(Throwable::getMessage).toList();
+            return new CompilacaoResponse(false,
+                    "Foram encontrados " + lexer.getErros().size() +
+                            " erros léxicos.", tokens, mensagensErro);
         }
+
+        // Devolve a resposta de sucesso
+        return new CompilacaoResponse(true,
+                "Análise concluída com sucesso!", tokens, null);
+
 
     }
 }

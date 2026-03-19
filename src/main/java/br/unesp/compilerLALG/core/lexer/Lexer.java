@@ -11,11 +11,23 @@ public class Lexer {
     private final String input;
     private int pos = 0;
 
+    // lista para guardar os erros - em vez de parar o programa
+    private List<CompilerException.LexicalException> listaErros = new ArrayList<>();
+
     public Lexer(String input) {
         this.input = input;
     }
 
-    public List<Token> tokenize() throws CompilerException {
+    // Metodo para a API consultar se houve erros após a tokenização
+    public List<CompilerException.LexicalException> getErros() {
+        return listaErros;
+    }
+
+    public boolean temErros() {
+        return !listaErros.isEmpty();
+    }
+
+    public List<Token> tokenize() {
         List<Token> tokens = new ArrayList<>();
         int linha = 1;
         int coluna = 1;
@@ -121,10 +133,16 @@ public class Lexer {
                 }
             }
 
-            // Tratamento de Erro Léxico
+            // Tratamento de Erro Léxico - Caractere Não Reconecido
             if (!tokenReconhecido) {
-                throw new CompilerException.CaractereNaoReconhecidoException(
-                        input.charAt(pos), linha, coluna);
+                // Em vez de 'throw', o erro é add à lista
+                listaErros.add(new CompilerException.CaractereNaoReconhecidoException(
+                        input.charAt(pos), linha, coluna));
+
+                // Ignora o caractere inválido e força o avanço
+                pos++;
+                coluna++;
+                continue; // Volta para o início do while para analisar o próximo caractere
             }
         }
         // Adiciona o token finalizador

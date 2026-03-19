@@ -2,6 +2,7 @@ package br.unesp.compilerLALG.lexer;
 
 import br.unesp.compilerLALG.core.lexer.Lexer;
 import br.unesp.compilerLALG.core.lexer.Token;
+import br.unesp.compilerLALG.exception.CompilerException;
 
 import java.util.List;
 

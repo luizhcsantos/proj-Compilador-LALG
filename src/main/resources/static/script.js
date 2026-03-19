@@ -54,7 +54,7 @@ async function compilar() {
 
     // Reset UI
     painelLogs.innerHTML = '<div class="log-entry">Conectando com o compilador...</div>';
-    painelErros.innerHTML = '<div style="color: var(--texto-cinza); text-align: center;">Nenhum erro encontrado.</div>';
+    painelErros.innerHTML = '<div style="color: var(--texto-cinza); text-align: center;"></div>';
     tabelaCorpo.innerHTML = '';
     lblTokens.innerHTML = `0 <span class="card-label">tokens</span>`;
 
@@ -120,8 +120,12 @@ async function compilar() {
             }
         } else {
             // Trata o Erro Léxico
-            painelErros.innerHTML = `<div class="log-entry erro">✕ ${dados.mensagem}</div>`;
-            painelLogs.innerHTML = `<div class="log-entry erro">Compilação abortada com erros.</div>`;
+            dados.lsitaErros.forEach((erro) => {
+                console.log(erro)
+                painelErros.innerHTML += `<div class="log-entry erro">✕ ${erro}</div>`
+            })
+            // painelErros.innerHTML = `<div class="log-entry erro">✕ ${dados.mensagem}</div>`;
+            // painelLogs.innerHTML = `<div class="log-entry erro">Compilação abortada com erros.</div>`;
             mudarAba('tab-erros'); // Foca na aba de erros automaticamente
 
             // Força a tela a voltar para o código-fonte para o utilizador corrigir o erro
@@ -130,6 +134,7 @@ async function compilar() {
     } catch (erro) {
         painelErros.innerHTML = `<div class="log-entry erro">✕ Erro de Conexão: O servidor Spring Boot está ligado? (${erro.message})</div>`;
         mudarAba('tab-erros');
+        mostrarVisao('visao-editor', 'card-editor');
     }
 }
 
@@ -145,7 +150,7 @@ function novoArquivo() {
         // Limpa os painéis e o dashboard
         // Limpa os logs e tabelas
         document.getElementById('painel-logs').innerHTML = '<div class="log-entry">Novo arquivo criado.</div>';
-        document.getElementById('painel-erros').innerHTML = '<div style="color: var(--texto-cinza); text-align: center;">Nenhum erro encontrado.</div>';
+        document.getElementById('painel-erros').innerHTML = '<div style="color: var(--texto-cinza); text-align: center;"></div>';
         document.getElementById('tabela-corpo').innerHTML = '';
         document.getElementById('lbl-tokens').innerHTML = `0 <span class="card-label">tokens</span>`;
         mudarAba('tab-logs');
