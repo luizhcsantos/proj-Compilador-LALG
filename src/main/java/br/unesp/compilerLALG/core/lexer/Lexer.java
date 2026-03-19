@@ -58,8 +58,8 @@ public class Lexer {
                 }
                 // Se chegou ao fim do arquivo e não achou a chave '}'
                 if (!comentarioFechado) {
-                    throw new CompilerException("Erro Léxico: Comentário de bloco '{' iniciado na coluna "
-                            + colunaInicioComentario + " nunca foi fechado.");
+                    throw new CompilerException.ComentarioNaoFechadoException(
+                            linha, colunaInicioComentario);
                 }
                 continue;
             }
@@ -86,26 +86,26 @@ public class Lexer {
                     String lexema = matcher.group();
 
                     if (tipo.name().equals("IDENTIFICADOR") && lexema.length() > 10) {
-                        throw new CompilerException("Erro Léxico: O identificador '" + lexema +
-                                " 'excede o limite máximo de 10 caracteres na linha " + linha);
+                        throw new CompilerException.LimiteExcedidoException(
+                                "identificador", lexema, 10, linha, coluna);
                     }
 
                     if (tipo.name().equals("NUM") && lexema.length() > 10) {
-                        throw new CompilerException("Erro Léxico: O número '" + lexema +
-                                "' excede o limite máximo de 10 dígitos na linha " + linha);
+                        throw new CompilerException.LimiteExcedidoException(
+                                "número", lexema, 10, linha, coluna);
                     }
 
                     if (tipo.name().equals("NUM_REAL")) {
                         String[] partes = lexema.split("\\.");
-                        // Verifica a parte inteira (antes do ponto)
+                        // Verifica a parte inteira
                         if (partes[0].length() > 10) {
-                            throw new CompilerException("Erro Léxico: A parte inteira do número '" + lexema +
-                                    "' excede 10 dígitos na linha " + linha);
+                            throw new CompilerException.LimiteExcedidoException(
+                                    "parte inteira do número", lexema, 10, linha, coluna);
                         }
-                        // Verifica a parte decimal (depois do ponto), se existir
+                        // Verifica a parte decimal
                         if (partes.length > 1 && partes[1].length() > 10) {
-                            throw new CompilerException("Erro Léxico: A parte decimal do número '" + lexema +
-                                    "' excede 10 dígitos na linha " + linha);
+                            throw new CompilerException.LimiteExcedidoException(
+                                    "parte decimal do número", lexema, 10, linha, coluna);
                         }
                     }
 
@@ -123,8 +123,8 @@ public class Lexer {
 
             // Tratamento de Erro Léxico
             if (!tokenReconhecido) {
-                throw new CompilerException("Erro Léxico: Caractere não reconhecido '" + input.charAt(pos) +
-                        "' na linha " + linha + ", coluna " + coluna);
+                throw new CompilerException.CaractereNaoReconhecidoException(
+                        input.charAt(pos), linha, coluna);
             }
         }
         // Adiciona o token finalizador

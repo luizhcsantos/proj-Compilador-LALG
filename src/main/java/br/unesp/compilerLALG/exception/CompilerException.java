@@ -10,29 +10,38 @@ public class CompilerException extends Exception {
         super(message, cause);
     }
 
-    public static class CaractereNaoReconhecidoException extends CompilerException {
-        public CaractereNaoReconhecidoException(String caractere) {
-            super("Caractere não reconhecido: '" + caractere + "'");
+    // Classe base para erros léxicos
+    public static class LexicalException extends CompilerException {
+        private final int linha;
+        private final int coluna;
+
+        public LexicalException(String mensagemEspecifica, int linha, int coluna) {
+            super("Erro Léxico: " + mensagemEspecifica + " na linha " + linha + ", coluna " + coluna);
+            this.linha = linha;
+            this.coluna = coluna;
+        }
+
+        public int getLinha() { return linha; }
+        public int getColuna() { return coluna; }
+    }
+
+    // Herdam de LexicalException para erros específicos
+
+    public static class CaractereNaoReconhecidoException extends LexicalException {
+        public CaractereNaoReconhecidoException(char caractere, int linha, int coluna) {
+            super("Caractere não reconhecido '" + caractere + "'", linha, coluna);
         }
     }
 
-    public static class ParenteseFechadoEsperadoException extends CompilerException {
-        public ParenteseFechadoEsperadoException() {
-            super("Esperado ')'");
+    public static class ComentarioNaoFechadoException extends LexicalException {
+        public ComentarioNaoFechadoException(int linha, int colunaInicio) {
+            super("Comentário de bloco '{' nunca foi fechado", linha, colunaInicio);
         }
     }
 
-     public static class TokenInesperadoException extends CompilerException {
-        public TokenInesperadoException(String token) {
-            super("Token inesperado: '" + token + "'");
+    public static class LimiteExcedidoException extends LexicalException {
+        public LimiteExcedidoException(String tipo, String lexema, int limite, int linha, int coluna) {
+            super("O " + tipo + " '" + lexema + "' excede o limite máximo de " + limite + " caracteres/dígitos", linha, coluna);
         }
     }
-
-     public static class DivisaoPorZeroException extends CompilerException {
-        public DivisaoPorZeroException() {
-            super("Erro de execução: Divisão por zero");
-        }
-    }
-
-
 }
