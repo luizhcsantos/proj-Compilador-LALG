@@ -15,10 +15,69 @@ public class Parser {
     private int posicaoAtual;
     private Token tokenAtual;
     private int pos = 0;
-    private final Set<String> regras;
+    // ==========================================
+    // Conjuntos First
+    // ==========================================
+
+    // FIRST(<bloco>) -> pode começar um bloco de código
+    private final Set<String> FIRST_BLOCO = Set.of(
+            "INT", "BOOLEAN", "IDENTIFICADOR", "PROCEDURE", "BEGIN"
+    );
+
+    // FIRST(<parte de declarações de variáveis>) -> inicia a declaração de variáveis
+    private final Set<String> FIRST_DECL_VAR = Set.of(
+            "INT", "BOOLEAN", "IDENTIFICADOR"
+    );
+
+    // FIRST(<comando>) -> Todos os tokens que podem iniciar um comando válido
+    private final Set<String> FIRST_COMANDO = Set.of(
+            "IDENTIFICADOR", "READ", "WRITE", "BEGIN", "IF", "WHILE"
+    );
+
+    // FIRST(<expressão>) -> pode começar uma conta matemática ou lógica
+    private final Set<String> FIRST_EXPRESSAO = Set.of(
+            "OPSOMA", "OPSUB", "IDENTIFICADOR", "NUM", "ABREPAR", "OPNOT", "TRUE", "FALSE"
+    );
+
+    // FIRST(<fator>) -> elementos mais básicos de uma expressão
+    private final Set<String> FIRST_FATOR = Set.of(
+            "IDENTIFICADOR", "NUM", "ABREPAR", "OPNOT", "TRUE", "FALSE"
+    );
+
+
+    // ==========================================
+    // Conjuntos Follow (Para sair de loops e tratar erros - Panic Mode)
+    // ==========================================
+
+    // FOLLOW(<bloco>) -> vem logo após um bloco terminar
+    private final Set<String> FOLLOW_BLOCO = Set.of(
+            "PONTO", "PONTOVIRGULA"
+    );
+
+    // FOLLOW(<parte de declarações de variáveis>) -> vem depois das variáveis
+    private final Set<String> FOLLOW_DECL_VAR = Set.of(
+            "PROCEDURE", "BEGIN"
+    );
+
+    // FOLLOW(<declaração de procedimento>) -> vem após declarar uma procedure
+    private final Set<String> FOLLOW_DECL_PROC = Set.of(
+            "PONTOVIRGULA", "BEGIN"
+    );
+
+    // FOLLOW(<comando>) -> pode aparecer LOGO APÓS um comando terminar
+    private final Set<String> FOLLOW_COMANDO = Set.of(
+            "PONTOVIRGULA", "END", "ELSE"
+    );
+
+    // FOLLOW(<expressão>) -> sinais que indicam que a expressão (conta) acabou
+    private final Set<String> FOLLOW_EXPRESSAO = Set.of(
+            "PONTOVIRGULA", "END", "ELSE", "THEN", "DO", "FECHAPAR", "VIRGULA",
+            "OPIGUAL", "OPDIF", "OPMENOR", "OPMENORIGUAL", "OPMAIOR", "OPMAIORIGUAL"
+    );
 
     /* TODO:
-        - Crie Listas de Strings (ou Set<String>) no topo da sua classe Parser contendo os conjuntos First e Follow mais importantes para manter o código limpo.
+        - Crie Listas de Strings (ou Set<String>) no topo da sua classe Parser
+            contendo os conjuntos First e Follow mais importantes.
         - Sempre que o símbolo na EBNF for |, use um switch com os Firsts.
         - Sempre que o símbolo for [ ] (Opcional), use um if com os Firsts.
         - Sempre que houver um catch de erro, use um while de sincronização usando os Follows.
@@ -30,12 +89,7 @@ public class Parser {
         if (!tokens.isEmpty()) {
             this.tokenAtual = tokens.get(0);
         }
-        regras = new HashSet<>();
-        regras.add("<programa> ::= program <identificador>; <bloco>.");
-        regras.add("<bloco> ::= [<parte de declarações de variáveis>] [<parte de declarações de sub-rotinas>] <comando composto>");
-        regras.add("<parte de declarações de variáveis> ::= <declaração de variáveis> {;<declaração de variáveis};");
-        regras.add("declaração de variáveis> ::= <tipo><lista de identificadores>");
-        regras.add("<lista de identificadores> ::= <identificador>{,<identificador>;}");
+
     }
 
     private void avancar() {
