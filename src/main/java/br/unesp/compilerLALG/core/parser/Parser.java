@@ -81,6 +81,11 @@ public class Parser {
         - Sempre que o símbolo na EBNF for |, use um switch com os Firsts.
         - Sempre que o símbolo for [ ] (Opcional), use um if com os Firsts.
         - Sempre que houver um catch de erro, use um while de sincronização usando os Follows.
+        - Corrija o ABREPAR e FECHAPAR no fator() para evitar bugs na matemática.
+        - Adicione o metodo sincronizar() e comece a colocar blocos try-catch chamando ele dentro de blocos maiores.
+        - Preencha os métodos vazios (parseDeclaracoesVariaveis, parseComandoIf, parseComandoWhile)
+            traduzindo linha a linha da sua EBNF usando o match() e o avancar().
+        -
      */
 
     public Parser(List<Token> tokens) {
@@ -125,6 +130,12 @@ public class Parser {
 
     }
 
+    private void sincronizar(Set<String> followSet) {
+        while (!followSet.contains(tokenAtual.getToken()) && !tokenAtual.getToken().equals("EOF")) {
+            avancar();
+        }
+    }
+
     // Programa ::= PROGRAM <identificador> ; <bloco> .
     public void parsePrograma() {
         match("PROGRAM");
@@ -155,8 +166,23 @@ public class Parser {
 
             case "WRITE" -> parseComandoEscrita();
 
-            // Se for um identificador, é uma atribuição
-            case "IDENTIFICADOR" -> parseComandoAtribuicao();
+            // Dentro do switch do seu parseComando():
+            case "IDENTIFICADOR" -> {
+                match("IDENTIFICADOR");
+
+                // Fatoração: Olha para o PRÓXIMO token para decidir
+                if (tokenAtual.getToken().equals("ATRIBUICAO")) { // :=
+                    parseComandoAtribuicao();
+                } else if (tokenAtual.getToken().equals("ABREPAR")) { // (
+                    // É uma chamada de procedimento com parâmetros!
+                    match("ABREPAR");
+                    // parseListaExpressoes(); <- Você precisará criar este metodo
+                    match("FECHAPAR");
+                } else {
+                    // Chamada de procedimento sem parâmetros (ex: limpar_tela;)
+                    // Não faz nada, já consumiu o identificador.
+                }
+            }
 
             case "BEGIN" -> parseComandoComposto();
 
@@ -198,14 +224,22 @@ public class Parser {
 
     }
 
+
     // <lista_comandos> ::= <comando> { ; <comando> }
     public void parseListaComandos() {
-        parseComando(); // Tem que ter pelo menos um
-
-        // Enquanto o próximo token for um ponto e vírgula...
-        while (tokenAtual.getToken().equals("PONTOVIRGULA")) {
-            match("PONTOVIRGULA");
+        try {
             parseComando();
+
+            while (tokenAtual.getToken().equals("PONTOVIRGULA")) {
+                match("PONTOVIRGULA");
+                parseComando();
+            }
+        } catch (RuntimeException e) {
+            // anota o erro (no futuro, pode adicionar numa lista de erros sintáticos)
+            System.err.println(e.getMessage());
+
+            // aciona o Panic Mode para pular até o fim do comando problemático
+            sincronizar(FOLLOW_COMANDO);
         }
     }
 
