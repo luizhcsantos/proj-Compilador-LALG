@@ -5,7 +5,9 @@ import br.unesp.compilerLALG.core.parser.ast.ASTnode;
 import br.unesp.compilerLALG.core.parser.ast.BinOpNode;
 import br.unesp.compilerLALG.core.parser.ast.NumNode;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class Parser {
 
@@ -13,6 +15,7 @@ public class Parser {
     private int posicaoAtual;
     private Token tokenAtual;
     private int pos = 0;
+    private final Set<String> regras;
 
     /* TODO:
         - Crie Listas de Strings (ou Set<String>) no topo da sua classe Parser contendo os conjuntos First e Follow mais importantes para manter o código limpo.
@@ -27,6 +30,12 @@ public class Parser {
         if (!tokens.isEmpty()) {
             this.tokenAtual = tokens.get(0);
         }
+        regras = new HashSet<>();
+        regras.add("<programa> ::= program <identificador>; <bloco>.");
+        regras.add("<bloco> ::= [<parte de declarações de variáveis>] [<parte de declarações de sub-rotinas>] <comando composto>");
+        regras.add("<parte de declarações de variáveis> ::= <declaração de variáveis> {;<declaração de variáveis};");
+        regras.add("declaração de variáveis> ::= <tipo><lista de identificadores>");
+        regras.add("<lista de identificadores> ::= <identificador>{,<identificador>;}");
     }
 
     private void avancar() {
