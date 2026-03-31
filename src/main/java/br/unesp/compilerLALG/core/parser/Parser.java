@@ -14,6 +14,13 @@ public class Parser {
     private Token tokenAtual;
     private int pos = 0;
 
+    /* TODO:
+        - Crie Listas de Strings (ou Set<String>) no topo da sua classe Parser contendo os conjuntos First e Follow mais importantes para manter o código limpo.
+        - Sempre que o símbolo na EBNF for |, use um switch com os Firsts.
+        - Sempre que o símbolo for [ ] (Opcional), use um if com os Firsts.
+        - Sempre que houver um catch de erro, use um while de sincronização usando os Follows.
+     */
+
     public Parser(List<Token> tokens) {
         this.tokens = tokens;
         this.posicaoAtual = 0;
@@ -67,6 +74,13 @@ public class Parser {
     }
 
     private void parseBloco() {
+
+        if (tokenAtual.getToken().equals("INT") || tokenAtual.getToken().equals("BOOLEAN")) {
+            parseDeclaracoesVariaveis();
+        }
+    }
+
+    private void parseDeclaracoesVariaveis() {
 
     }
 
