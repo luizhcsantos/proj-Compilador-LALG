@@ -61,28 +61,64 @@ public class Parser {
         match("IDENTIFICADOR");
         match("PONTOVIRGULA");
 
-        //parseBloco();
+        parseBloco();
 
         match("PONTO");
     }
 
+    private void parseBloco() {
+
+    }
+
     // <comando> ::= <comando_atribuicao> | <comando_leitura> | <comando_escrita>
     public void parseComando() {
-        // Se o token for 'read'...
-        if (tokenAtual.getToken().equals("READ")) {
-            //parseComandoLeitura();
+
+        switch (tokenAtual.getToken()) {
+            case "READ" -> parseComandoLeitura();
+
+            case "WRITE" -> parseComandoEscrita();
+
+            // Se for um identificador, é uma atribuição
+            case "IDENTIFICADOR" -> parseComandoAtribuicao();
+
+            case "BEGIN" -> parseComandoComposto();
+
+            case "IF" -> parseComandoIf();
+
+            case "ELSE" -> {
+
+            }
+            case "WHILE" -> parseComandoWhile();
+
+            default -> throw new RuntimeException("Erro Sintático: Comando inválido na linha " + tokenAtual.getLinha());
         }
-        // Se o token for 'write'...
-        else if (tokenAtual.getToken().equals("WRITE")) {
-            //parseComandoEscrita();
-        }
-        // Se for um identificador, é uma atribuição (ex: x := 10)
-        else if (tokenAtual.getToken().equals("IDENTIFICADOR")) {
-            //parseComandoAtribuicao();
-        }
-        else {
-            throw new RuntimeException("Erro Sintático: Comando inválido na linha " + tokenAtual.getLinha());
-        }
+
+
+    }
+
+    private void parseComandoComposto() {
+
+    }
+
+    private void parseComandoWhile() {
+
+    }
+
+    private void parseComandoIf() {
+
+
+    }
+
+    private void parseComandoAtribuicao() {
+
+    }
+
+    private void parseComandoEscrita() {
+
+    }
+
+    private void parseComandoLeitura() {
+
     }
 
     // <lista_comandos> ::= <comando> { ; <comando> }

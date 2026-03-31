@@ -13,6 +13,7 @@
     --erro-texto: #d32f2f;
     --sucesso-bg: #e8f5e9;
     --sucesso-texto: #2e7d32;
+    --hover-tabela: #f5eeed;
 }
 
 [data-theme="escuro"] {
@@ -33,6 +34,7 @@
     --erro-texto: #fca5a5;
     --sucesso-bg: #1e4620;
     --sucesso-texto: #89d185;
+    --hover-tabela: #2a2d2e;
 }
 
 [data-theme="dracula"] {
@@ -53,6 +55,7 @@
     --erro-texto: #ffb8b8;
     --sucesso-bg: #50fa7b40;
     --sucesso-texto: #50fa7b;
+    --hover-tabela: #44475a;
 }
 
 /* Transição suave para todas as mudanças de cor */
@@ -128,7 +131,7 @@ button { cursor: pointer; font-family: inherit; border: none; background: none; 
 table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
 th { color: var(--texto-cinza); font-weight: 600; padding: 10px; border-bottom: 1px solid var(--borda); position: sticky; top: 0; background: var(--bg-main); }
 td { padding: 10px; border-bottom: 1px solid var(--borda); font-family: 'Fira Code', monospace; }
-tr:hover { background-color: #f5eeed; }
+tr:hover { background-color: var(--hover-tabela); }
 .token-tag { background: #eef2ff; color: #4f46e5; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
 
 /*customziação da scrollbar*/
