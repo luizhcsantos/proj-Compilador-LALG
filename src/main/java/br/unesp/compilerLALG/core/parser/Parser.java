@@ -157,21 +157,21 @@ public class Parser {
     private void parseBloco() {
 
         if (tokenAtual.getToken().equals("INT") || tokenAtual.getToken().equals("BOOLEAN")) {
-            parseDeclaracaoVariaveis();
+            parseParteDeclaracaoVariaveis();
         }
 
-        if (tokenAtual.getToken().equals("PROCEDURE")) {
-            parseDeclaracoesProcedimentos();
-        }
+//        if (tokenAtual.getToken().equals("PROCEDURE")) {
+//            parseDeclaracaoProcedimentos();
+//        }
 
         parseComandoComposto();
     }
 
-    private void parseDeclaracoesProcedimentos() {
+    private void parseDeclaracaoProcedimentos() {
 
     }
 
-    private void parseParteDeclaracoesVariaveis() {
+    private void parseParteDeclaracaoVariaveis() {
 
 
         parseDeclaracaoVariaveis();
@@ -276,6 +276,9 @@ public class Parser {
 
     private void parseComandoComposto() {
 
+        match("BEGIN");
+        parseListaComandos();
+        match("END");
     }
 
     private void parseComandoWhile() {
@@ -288,7 +291,8 @@ public class Parser {
     }
 
     private void parseComandoAtribuicao() {
-
+        match("ATRIBUICAO");
+        // expressão();
     }
 
     private void parseComandoEscrita() {

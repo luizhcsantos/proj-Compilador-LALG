@@ -63,7 +63,7 @@ public class CompilerException extends RuntimeException {
     // Erro do match() -> "Esperava X, encontrou Y"
     public static class TokenInesperadoException extends SyntaxException {
         public TokenInesperadoException(String tipoEsperado, String tokenEncontrado, String lexema, int linha, int coluna) {
-            super("Esperava o token <" + tipoEsperado + ">, mas encontrou <" + tokenEncontrado + "> ('" + lexema + "')", linha, coluna);
+            super("Esperava o token [" + tipoEsperado + "], mas encontrou [" + tokenEncontrado + "] ('" + lexema + "')", linha, coluna);
         }
     }
 
