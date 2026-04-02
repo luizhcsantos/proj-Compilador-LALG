@@ -7,10 +7,7 @@ import br.unesp.compilerLALG.core.parser.ast.NumNode;
 import br.unesp.compilerLALG.exception.CompilerException;
 import org.jspecify.annotations.NonNull;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class Parser {
 
@@ -18,23 +15,12 @@ public class Parser {
     private int posicaoAtual;
     private Token tokenAtual;
     private int pos = 0;
+    private Stack<String> pilha;
+    private Map<String, Map<String, List<String>>> tabelaParse; // Tabela de Análise Sintática (LL(1))
 
     // Lista para guardar os erros sintáticos (Panic Mode)
     private final List<CompilerException.SyntaxException> listaErrosSintaticos = new ArrayList<>();
 
-
-    /* TODO:
-        - Crie Listas de Strings (ou Set<String>) no topo da classe Parser
-            contendo os conjuntos First e Follow mais importantes.
-        - Sempre que o símbolo na EBNF for |, use um switch com os Firsts.
-        - Sempre que o símbolo for [ ] (Opcional), use um if com os Firsts.
-        - Sempre que houver um catch de erro, use um while de sincronização usando os Follows.
-        - Corrija o ABREPAR e FECHAPAR no fator() para evitar bugs na matemática.
-        - Adicione o metodo sincronizar() e comece a colocar blocos try-catch chamando ele dentro de blocos maiores.
-        - Preencha os métodos vazios (parseDeclaracoesVariaveis, parseComandoIf, parseComandoWhile)
-            traduzindo linha a linha da sua EBNF usando o match() e o avancar().
-        -
-     */
 
     public Parser(List<Token> tokens) {
         this.tokens = tokens;
@@ -42,6 +28,11 @@ public class Parser {
         if (!tokens.isEmpty()) {
             this.tokenAtual = tokens.get(0);
         }
+        inicializarTabela();
+
+    }
+
+    private void inicializarTabela() {
 
     }
 
@@ -55,16 +46,42 @@ public class Parser {
     }
 
     public void analisar() {
-        try {
-            //System.out.println("Análise sintática concluída com sucesso!");
+        while (!pilha.isEmpty()) {
+            String topo =  pilha.peek();
+            String token = tokenAtual.getToken();
 
-            // Se terminou de analisar o programa, o próximo token DEVE ser o fim do arquivo.
-            if (!tokenAtual.getToken().equals("EOF")) {
-                throw new RuntimeException("Erro Sintático: Código extra após o fim do programa ('." + "') na linha " + tokenAtual.getLinha());
+            if (topo.equals(token)) {
+                pilha.pop();
+                avancar();
+            } else if (isTerminal(topo)) {
+                tratarErro();
+            } else {
+                List<String> producao = consultarTabela(topo, token);
+                if (producao != null) {
+                    pilha.pop();
+                    empilhaReverso(producao);
+                } else {
+                    tratarErro();
+                }
             }
-        } catch (RuntimeException e) {
-            System.err.println(e.getMessage());
+
         }
+    }
+
+    private void empilhaReverso(List<String> producao) {
+
+    }
+
+    private List<String> consultarTabela(String topo, String token) {
+        return null;
+    }
+
+    private void tratarErro() {
+
+    }
+
+    private boolean isTerminal(String topo) {
+        return false;
     }
 
     private void match(String tipoEsperado) {
