@@ -44,4 +44,41 @@ public class CompilerException extends RuntimeException {
             super("O " + tipo + " '" + lexema + "' excede o limite máximo de " + limite + " caracteres/dígitos", linha, coluna);
         }
     }
+
+    // Classe base para erros léxicos
+    public static class SyntaxException extends CompilerException {
+        private final int linha;
+        private final int coluna;
+
+        public SyntaxException(String mensagemEspecifica, int linha, int coluna) {
+            super("Erro Sintático: " + mensagemEspecifica + " na linha " + linha + ", coluna " + coluna);
+            this.linha = linha;
+            this.coluna = coluna;
+        }
+
+        public int getLinha() { return linha; }
+        public int getColuna() { return coluna; }
+    }
+
+    // Erro do match() -> "Esperava X, encontrou Y"
+    public static class TokenInesperadoException extends SyntaxException {
+        public TokenInesperadoException(String tipoEsperado, String tokenEncontrado, String lexema, int linha, int coluna) {
+            super("Esperava o token <" + tipoEsperado + ">, mas encontrou <" + tokenEncontrado + "> ('" + lexema + "')", linha, coluna);
+        }
+    }
+
+    // Erro para quando um comando começa de forma inválida
+    public static class ComandoInvalidoException extends SyntaxException {
+        public ComandoInvalidoException(String lexema, int linha, int coluna) {
+            super("Comando inválido ou não reconhecido: '" + lexema + "'", linha, coluna);
+        }
+    }
+
+    // Erro para quando há código sobrando após o "end." do programa
+    public static class CodigoExtraException extends SyntaxException {
+        public CodigoExtraException(String lexema, int linha, int coluna) {
+            super("Código extra encontrado após o fim do programa. Token: '" + lexema + "'", linha, coluna);
+        }
+    }
+
 }

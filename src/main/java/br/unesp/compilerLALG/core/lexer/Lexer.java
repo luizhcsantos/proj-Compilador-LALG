@@ -12,7 +12,7 @@ public class Lexer {
     private int pos = 0;
 
     // lista para guardar os erros - em vez de parar o programa
-    private List<CompilerException.LexicalException> listaErros = new ArrayList<>();
+    private final List<CompilerException.LexicalException> listaErros = new ArrayList<>();
 
     public Lexer(String input) {
         this.input = input;

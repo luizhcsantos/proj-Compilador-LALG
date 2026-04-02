@@ -4,8 +4,11 @@ import br.unesp.compilerLALG.core.lexer.Token;
 import br.unesp.compilerLALG.core.parser.ast.ASTnode;
 import br.unesp.compilerLALG.core.parser.ast.BinOpNode;
 import br.unesp.compilerLALG.core.parser.ast.NumNode;
+import br.unesp.compilerLALG.exception.CompilerException;
 import org.jspecify.annotations.NonNull;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -15,8 +18,11 @@ public class Parser {
     private int posicaoAtual;
     private Token tokenAtual;
     private int pos = 0;
-    // Conjuntos First
 
+    // Lista para guardar os erros sintáticos (Panic Mode)
+    private final List<CompilerException.SyntaxException> listaErrosSintaticos = new ArrayList<>();
+
+    // Conjuntos First (Para escolher qual caminho seguir na EBNF)
     // FIRST(<bloco>) -> pode começar um bloco de código
     private final Set<String> FIRST_BLOCO = Set.of(
             "INT", "BOOLEAN", "IDENTIFICADOR", "PROCEDURE", "BEGIN"
@@ -119,8 +125,14 @@ public class Parser {
         if (tokenAtual.getToken().equals(tipoEsperado)) {
             avancar(); // se for o tipo correto, consome o token e avança
         } else {
-            throw new RuntimeException("Erro Sintático na linha " + tokenAtual.getLinha() +
-                    ": Esperava '" + tipoEsperado + "', mas encontrou '" + tokenAtual.getLexema() + "'");
+            // Regista o erro
+            listaErrosSintaticos.add(new CompilerException.TokenInesperadoException(
+                    tipoEsperado,
+                    tokenAtual.getToken(),
+                    tokenAtual.getLexema(),
+                    tokenAtual.getLinha(),
+                    tokenAtual.getColunaInicial()
+            ));
         }
 
     }
@@ -174,11 +186,29 @@ public class Parser {
         } else if (tokenAtual.getToken().equals("BOOLEAN")) {
             match("BOOLEAN");
         } else {
-            throw new RuntimeException("Erro Sintático na linha " + tokenAtual.getLinha() +
-                    ": Esperado tipo 'int' ou 'boolean', mas encontrou '" + tokenAtual.getLexema() + "'");
+            listaErrosSintaticos.add(new CompilerException.TokenInesperadoException(
+                    "null",
+                    tokenAtual.getToken(),
+                    tokenAtual.getLexema(),
+                    tokenAtual.getLinha(),
+                    tokenAtual.getColunaInicial()
+            ));
+
+            // PANIC MODE
+            // Sincroniza usando o FIRST do próximo elemento (que é IDENTIFICADOR)
+            // somado ao FOLLOW da regra atual (PONTOVIRGULA, BEGIN, PROCEDURE)
+            Set<String> syncSet = new HashSet<>();
+            syncSet.add("IDENTIFICADOR");
+            syncSet.addAll(FOLLOW_DECL_VAR);
+
+            sincronizar(syncSet);
         }
 
-        parseListaIdentificadores();
+        // Se o Panic Mode funcionou, ele parou em cima de um Identificador ou de um ;
+        // Chama a lista de identificadores apenas se estiver num token válido
+        if (tokenAtual.getToken().equals("IDENTIFICADOR")) {
+            parseListaIdentificadores();
+        }
     }
 
     private void parseListaIdentificadores() {
@@ -225,7 +255,16 @@ public class Parser {
             }
             case "WHILE" -> parseComandoWhile();
 
-            default -> throw new RuntimeException("Erro Sintático: Comando inválido na linha " + tokenAtual.getLinha());
+            default -> {
+                listaErrosSintaticos.add(new CompilerException.ComandoInvalidoException(
+                        tokenAtual.getLexema(),
+                        tokenAtual.getLinha(),
+                        tokenAtual.getColunaInicial()
+                ));
+
+                // Dispara o Panic-Mode para tentar salvar o resto da compilação
+                sincronizar(FOLLOW_COMANDO);
+            }
         }
 
 
@@ -354,4 +393,11 @@ public class Parser {
         return noEsquerda;
     }
 
+    public List<CompilerException.SyntaxException> getErros() {
+        return listaErrosSintaticos;
+    }
+
+    public boolean temErros() {
+        return !listaErrosSintaticos.isEmpty();
+    }
 }
