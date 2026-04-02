@@ -157,7 +157,7 @@ public class Parser {
     private void parseBloco() {
 
         if (tokenAtual.getToken().equals("INT") || tokenAtual.getToken().equals("BOOLEAN")) {
-            parseDeclaracoesVariaveis();
+            parseDeclaracaoVariaveis();
         }
 
         if (tokenAtual.getToken().equals("PROCEDURE")) {
@@ -173,13 +173,17 @@ public class Parser {
 
     private void parseParteDeclaracoesVariaveis() {
 
-        do {
-            parseDeclaracoesVariaveis();
+
+        parseDeclaracaoVariaveis();
+        match("PONTOVIRGULA");
+        while (tokenAtual.getToken().equals("INT") || tokenAtual.getToken().equals("BOOLEAN")) {
+            parseDeclaracaoVariaveis();
             match("PONTOVIRGULA");
-        } while (tokenAtual.getToken().equals("INT") || tokenAtual.getToken().equals("BOOLEAN"));
+        }
+        ;
     }
 
-    private void parseDeclaracoesVariaveis() {
+    private void parseDeclaracaoVariaveis() {
 
         if (tokenAtual.getToken().equals("INT")) {
             match("INT");
@@ -187,7 +191,7 @@ public class Parser {
             match("BOOLEAN");
         } else {
             listaErrosSintaticos.add(new CompilerException.TokenInesperadoException(
-                    "null",
+                    "INT ou BOOLEAN",
                     tokenAtual.getToken(),
                     tokenAtual.getLexema(),
                     tokenAtual.getLinha(),
