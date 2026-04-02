@@ -2,11 +2,11 @@ package br.unesp.compilerLALG.core.parser;
 
 import br.unesp.compilerLALG.core.lexer.Token;
 import br.unesp.compilerLALG.core.parser.ast.ASTnode;
-import br.unesp.compilerLALG.core.parser.ast.BinOpNode;
-import br.unesp.compilerLALG.core.parser.ast.NumNode;
 import br.unesp.compilerLALG.exception.CompilerException;
-import org.jspecify.annotations.NonNull;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.io.InputStream;
 import java.util.*;
 
 public class Parser {
@@ -14,26 +14,56 @@ public class Parser {
     private final List<Token> tokens;
     private int posicaoAtual;
     private Token tokenAtual;
-    private int pos = 0;
-    private Stack<String> pilha;
-    private Map<String, Map<String, List<String>>> tabelaParse; // Tabela de Análise Sintática (LL(1))
 
-    // Lista para guardar os erros sintáticos (Panic Mode)
+    // A Pilha Sintática e a Tabela M
+    private final Stack<String> pilha = new Stack<>();
+    private Map<String, Map<String, List<String>>> tabelaSintatica;
+
+    // Lista para guardar os erros sintáticos
     private final List<CompilerException.SyntaxException> listaErrosSintaticos = new ArrayList<>();
 
+    // Conjunto de todos os Terminais da linguagem LALG (Os tokens gerados pelo Lexer)
+    private final Set<String> TERMINAIS = Set.of(
+            "PROGRAM", "IDENTIFICADOR", "PONTOVIRGULA", "PONTO", "INT", "BOOLEAN",
+            "PROCEDURE", "BEGIN", "END", "VAR", "DOISPONTOS", "VIRGULA", "READ",
+            "WRITE", "ATRIBUICAO", "IF", "THEN", "ELSE", "WHILE", "DO", "NUM",
+            "ABREPAR", "FECHAPAR", "OPSOMA", "OPSUB", "OPMUL", "OPDIV", "OPAND",
+            "OPOR", "OPNOT", "TRUE", "FALSE", "OPIGUAL", "OPDIF", "OPMENOR",
+            "OPMENORIGUAL", "OPMAIOR", "OPMAIORIGUAL", "EOF"
+    );
 
     public Parser(List<Token> tokens) {
         this.tokens = tokens;
         this.posicaoAtual = 0;
+
         if (!tokens.isEmpty()) {
             this.tokenAtual = tokens.get(0);
+        } else {
+            this.tokenAtual = new Token("EOF", "EOF", 0, -1, -1);
         }
-        inicializarTabela();
 
+        carregarTabelaDoJson();
+
+        // Inicializa a Pilha: Fundo é EOF, Topo é o símbolo inicial da gramática
+        pilha.push("EOF");
+        pilha.push("PROGRAMA"); // Certifique-se que no seu JSON o ponto de partida chama-se "PROGRAMA"
     }
 
-    private void inicializarTabela() {
+    private void carregarTabelaDoJson() {
+        try {
+            // Lê o arquivo tabela.json da pasta src/main/resources
+            InputStream is = getClass().getResourceAsStream("/tabela.json");
+            if (is == null) {
+                throw new RuntimeException("Arquivo tabela.json não encontrado na pasta resources.");
+            }
 
+            ObjectMapper mapper = new ObjectMapper();
+            tabelaSintatica = mapper.readValue(is, new TypeReference<Map<String, Map<String, List<String>>>>() {});
+
+            // System.out.println("Tabela sintática carregada com sucesso!");
+        } catch (Exception e) {
+            throw new RuntimeException("Erro fatal ao carregar a tabela sintática: " + e.getMessage());
+        }
     }
 
     private void avancar() {
@@ -41,150 +71,99 @@ public class Parser {
         if (posicaoAtual < tokens.size()) {
             tokenAtual = tokens.get(posicaoAtual);
         } else {
-            tokenAtual = new Token("EOF", "EOF", 0, -1, -1); // Marca o fim dos tokens
+            tokenAtual = new Token("EOF", "EOF", 0, -1, -1);
         }
     }
 
-    public void analisar() {
-        while (!pilha.isEmpty()) {
-            String topo =  pilha.peek();
-            String token = tokenAtual.getToken();
+    private boolean isTerminal(String simbolo) {
+        return TERMINAIS.contains(simbolo);
+    }
 
-            if (topo.equals(token)) {
+    // ==========================================
+    // O MOTOR PRINCIPAL (Analisador Não-Recursivo)
+    // ==========================================
+    public ASTnode analisar() {
+        // O algoritmo base de Tabela e Pilha
+        while (!pilha.isEmpty()) {
+            String topoPilha = pilha.peek();
+            String tipoTokenAtual = tokenAtual.getToken();
+
+            // 1. Condição de Vazio (Epsilon)
+            // Se a regra mandou empilhar EPSILON, nós apenas desempilhamos e seguimos a vida.
+            if (topoPilha.equals("EPSILON")) {
                 pilha.pop();
-                avancar();
-            } else if (isTerminal(topo)) {
-                tratarErro();
-            } else {
-                List<String> producao = consultarTabela(topo, token);
-                if (producao != null) {
-                    pilha.pop();
-                    empilhaReverso(producao);
-                } else {
-                    tratarErro();
-                }
+                continue;
             }
 
+            // 2. O Topo casou perfeitamente com o Token Atual (Sucesso!)
+            if (topoPilha.equals(tipoTokenAtual)) {
+                pilha.pop(); // Remove da pilha
+                avancar();   // Lê o próximo token
+            }
+            // 3. O Topo é um Terminal, mas não é o que está no Token Atual (Erro Sintático)
+            else if (isTerminal(topoPilha)) {
+                registrarErroTerminalFaltando(topoPilha, tipoTokenAtual);
+
+                // Panic Mode simples: Arranca o terminal problemático da pilha para tentar continuar
+                pilha.pop();
+            }
+            // 4. O Topo é um Não-Terminal. Vamos consultar a Tabela M!
+            else {
+                Map<String, List<String>> linhaDaTabela = tabelaSintatica.get(topoPilha);
+
+                // Existe uma transição válida para este token?
+                if (linhaDaTabela != null && linhaDaTabela.containsKey(tipoTokenAtual)) {
+                    List<String> producao = linhaDaTabela.get(tipoTokenAtual);
+
+                    pilha.pop(); // Tira o Não-Terminal antigo
+                    empilharReverso(producao); // Empilha a nova regra de trás para frente
+                }
+                else {
+                    // Célula Vazia na Tabela! Erro Sintático Grave.
+                    registrarErroComandoInvalido(tipoTokenAtual);
+
+                    // Panic Mode simples: Avança o token para ver se o próximo encaixa em algo
+                    avancar();
+                }
+            }
         }
-    }
 
-    private void empilhaReverso(List<String> producao) {
-
-    }
-
-    private List<String> consultarTabela(String topo, String token) {
-        return null;
-    }
-
-    private void tratarErro() {
-
-    }
-
-    private boolean isTerminal(String topo) {
-        return false;
-    }
-
-    private void match(String tipoEsperado) {
-        if (tokenAtual.getToken().equals(tipoEsperado)) {
-            avancar(); // se for o tipo correto, consome o token e avança
-        } else {
-            // Regista o erro
-            listaErrosSintaticos.add(new CompilerException.TokenInesperadoException(
-                    tipoEsperado,
-                    tokenAtual.getToken(),
-                    tokenAtual.getLexema(),
-                    tokenAtual.getLinha(),
-                    tokenAtual.getColunaInicial()
+        // Se a pilha esvaziou, mas ainda tem código não lido
+        if (!tokenAtual.getToken().equals("EOF")) {
+            listaErrosSintaticos.add(new CompilerException.CodigoExtraException(
+                    tokenAtual.getLexema(), tokenAtual.getLinha(), tokenAtual.getColunaInicial()
             ));
         }
 
+        return null; // O motor de Tabela e Pilha puro não gera AST diretamente, retorna null por enquanto.
     }
 
-    private void sincronizar(@NonNull Set<String> followSet) {
-        while (!followSet.contains(tokenAtual.getToken()) && !tokenAtual.getToken().equals("EOF")) {
-            avancar();
+    private void empilharReverso(List<String> producao) {
+        // Empilha de trás para a frente. Exemplo: regra A -> B C, empilha C, depois B.
+        for (int i = producao.size() - 1; i >= 0; i--) {
+            pilha.push(producao.get(i));
         }
     }
 
-
-
-
-    public ASTnode parse() {
-        return expressao();
+    // ==========================================
+    // MÉTODOS DE ERRO E STATUS
+    // ==========================================
+    private void registrarErroTerminalFaltando(String esperado, String encontrado) {
+        listaErrosSintaticos.add(new CompilerException.TokenInesperadoException(
+                esperado,
+                encontrado,
+                tokenAtual.getLexema(),
+                tokenAtual.getLinha(),
+                tokenAtual.getColunaInicial()
+        ));
     }
 
-
-    public ASTnode fator() {
-        Token tokenAtual = tokens.get(pos);
-        switch (tokenAtual.getToken()) {
-            case "EOF" -> throw new RuntimeException("Expressão incompleta. Faltou um número.");
-            case "NUM" -> {
-                pos++; // "come" o número
-
-                // Verifica se o Lexer mandou um texto vazio antes de converter
-                String textoDoNumero = tokenAtual.getLexema();
-                if (textoDoNumero == null || textoDoNumero.trim().isEmpty()) {
-                    throw new RuntimeException("Erro interno no Lexer: Um número vazio foi gerado.");
-                }
-
-                try {
-                    return new NumNode(Double.parseDouble(textoDoNumero));
-                } catch (NumberFormatException e) {
-                    throw new RuntimeException("Erro ao converter para número: '" + textoDoNumero + "'");
-                }
-            }
-            case "AP" -> {
-                pos++; // "come" o parêntese de abertura
-
-
-                // resolve tudo que está dentro do oarenteses
-                ASTnode expressaoInterna = expressao();
-
-                // verifica se fehcou o parêntese corretamente
-                if (pos < tokens.size() && tokens.get(pos).getToken().equals("FP")) {
-                    pos++; // "come" o parêntese de fechamento
-                    return expressaoInterna;
-                } else {
-                    throw new RuntimeException("Erro de Sintaxe: Esperado ')' na coluna " + tokenAtual.getColunaFinal());
-                }
-            }
-        }
-        throw new RuntimeException("Erro de Sintaxe: Token inesperado '" + tokenAtual.getLexema());
-    }
-
-    // resolve multiplicação e divisão
-    public ASTnode termo() {
-        ASTnode noEsquerda = fator();
-
-        while (pos < tokens.size() && (tokens.get(pos).getToken().equals("OPMUL") || tokens.get(pos).getToken().equals("OPDIV"))) {
-
-            String operador = tokens.get(pos).getLexema();
-            pos++;
-
-            ASTnode noDireita = fator();
-
-            noEsquerda = new BinOpNode(noEsquerda, operador, noDireita);
-
-        }
-        // Se entrou no while, devolve a árvore de multiplicação.
-        // Se não entrou, devolve o número puro intacto.
-        return noEsquerda;
-    }
-
-    // resolve adição e subtração
-    public ASTnode expressao() {
-        ASTnode noEsquerda = termo();
-
-        while (pos < tokens.size() && (tokens.get(pos).getToken().equals("OPSOMA") || tokens.get(pos).getToken().equals("OPSUB"))) {
-
-            String operador = tokens.get(pos).getLexema();
-            pos++;
-
-            ASTnode noDireita = termo();
-
-            noEsquerda = new BinOpNode(noEsquerda, operador, noDireita);
-        }
-        return noEsquerda;
+    private void registrarErroComandoInvalido(String tokenInvalido) {
+        listaErrosSintaticos.add(new CompilerException.ComandoInvalidoException(
+                tokenAtual.getLexema(),
+                tokenAtual.getLinha(),
+                tokenAtual.getColunaInicial()
+        ));
     }
 
     public List<CompilerException.SyntaxException> getErros() {
