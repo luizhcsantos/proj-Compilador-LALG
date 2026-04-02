@@ -4,8 +4,8 @@ import br.unesp.compilerLALG.core.lexer.Token;
 import br.unesp.compilerLALG.core.parser.ast.ASTnode;
 import br.unesp.compilerLALG.core.parser.ast.BinOpNode;
 import br.unesp.compilerLALG.core.parser.ast.NumNode;
+import org.jspecify.annotations.NonNull;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -15,9 +15,7 @@ public class Parser {
     private int posicaoAtual;
     private Token tokenAtual;
     private int pos = 0;
-    // ==========================================
     // Conjuntos First
-    // ==========================================
 
     // FIRST(<bloco>) -> pode começar um bloco de código
     private final Set<String> FIRST_BLOCO = Set.of(
@@ -44,10 +42,7 @@ public class Parser {
             "IDENTIFICADOR", "NUM", "ABREPAR", "OPNOT", "TRUE", "FALSE"
     );
 
-
-    // ==========================================
     // Conjuntos Follow (Para sair de loops e tratar erros - Panic Mode)
-    // ==========================================
 
     // FOLLOW(<bloco>) -> vem logo após um bloco terminar
     private final Set<String> FOLLOW_BLOCO = Set.of(
@@ -76,7 +71,7 @@ public class Parser {
     );
 
     /* TODO:
-        - Crie Listas de Strings (ou Set<String>) no topo da sua classe Parser
+        - Crie Listas de Strings (ou Set<String>) no topo da classe Parser
             contendo os conjuntos First e Follow mais importantes.
         - Sempre que o símbolo na EBNF for |, use um switch com os Firsts.
         - Sempre que o símbolo for [ ] (Opcional), use um if com os Firsts.
@@ -130,7 +125,7 @@ public class Parser {
 
     }
 
-    private void sincronizar(Set<String> followSet) {
+    private void sincronizar(@NonNull Set<String> followSet) {
         while (!followSet.contains(tokenAtual.getToken()) && !tokenAtual.getToken().equals("EOF")) {
             avancar();
         }
@@ -152,10 +147,47 @@ public class Parser {
         if (tokenAtual.getToken().equals("INT") || tokenAtual.getToken().equals("BOOLEAN")) {
             parseDeclaracoesVariaveis();
         }
+
+        if (tokenAtual.getToken().equals("PROCEDURE")) {
+            parseDeclaracoesProcedimentos();
+        }
+
+        parseComandoComposto();
+    }
+
+    private void parseDeclaracoesProcedimentos() {
+
+    }
+
+    private void parseParteDeclaracoesVariaveis() {
+
+        do {
+            parseDeclaracoesVariaveis();
+            match("PONTOVIRGULA");
+        } while (tokenAtual.getToken().equals("INT") || tokenAtual.getToken().equals("BOOLEAN"));
     }
 
     private void parseDeclaracoesVariaveis() {
 
+        if (tokenAtual.getToken().equals("INT")) {
+            match("INT");
+        } else if (tokenAtual.getToken().equals("BOOLEAN")) {
+            match("BOOLEAN");
+        } else {
+            throw new RuntimeException("Erro Sintático na linha " + tokenAtual.getLinha() +
+                    ": Esperado tipo 'int' ou 'boolean', mas encontrou '" + tokenAtual.getLexema() + "'");
+        }
+
+        parseListaIdentificadores();
+    }
+
+    private void parseListaIdentificadores() {
+        match("IDENTIFICADOR");
+
+        while (tokenAtual.getToken().equals("VIRGULA")) {
+            match("VIRGULA");
+            match("IDENTIFICADOR");
+        }
     }
 
     // <comando> ::= <comando_atribuicao> | <comando_leitura> | <comando_escrita>
@@ -174,9 +206,9 @@ public class Parser {
                 if (tokenAtual.getToken().equals("ATRIBUICAO")) { // :=
                     parseComandoAtribuicao();
                 } else if (tokenAtual.getToken().equals("ABREPAR")) { // (
-                    // É uma chamada de procedimento com parâmetros!
+                    // É uma chamada de procedimento com parâmetros
                     match("ABREPAR");
-                    // parseListaExpressoes(); <- Você precisará criar este metodo
+                    // parseListaExpressoes();
                     match("FECHAPAR");
                 } else {
                     // Chamada de procedimento sem parâmetros (ex: limpar_tela;)
