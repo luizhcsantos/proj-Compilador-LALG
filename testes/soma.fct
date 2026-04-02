@@ -1,0 +1,9 @@
+program soma;
+var a, b, soma : int;
+begin
+  read(a, b);
+  soma := a + b;
+  write(soma)
+end.
+   
+  
