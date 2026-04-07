@@ -1,6 +1,7 @@
 package br.unesp.compilerLALG.dto;
 
 import br.unesp.compilerLALG.core.lexer.Token;
+import br.unesp.compilerLALG.core.parser.ast.ASTnode;
 
 import java.util.List;
 
@@ -10,6 +11,7 @@ public class CompilacaoResponse {
     private String mensagem;
     private List<Token> tokens;
     private List<String> lsitaErros;
+    private ASTnode arvoreSintatica; 
 
     public CompilacaoResponse(boolean sucesso, String mensagem, List<Token> tokens, List<String> lsitaErros) {
         this.sucesso = sucesso;

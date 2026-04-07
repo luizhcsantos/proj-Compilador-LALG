@@ -262,3 +262,13 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('icone-tema').innerText = iconesTemas[temaSalvo];
 
 });
+
+function desenharArvore(noRaiz) {
+    let nodesArray = [];
+    let edgeArray = [];
+    let idCounter = 1;
+
+    function processarNo(noId, idPai) {
+
+    }
+}
