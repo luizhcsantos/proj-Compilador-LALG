@@ -91,12 +91,14 @@
 
       <div class="console-panel">
         <div class="tabs">
-          <button class="tab" :class="{ active: abaAtiva === 'tab-erros' }" @click="mudarAba('tab-erros')">Erros ({{ erros.length }})</button>
+          <button class="tab" :class="{ active: abaAtiva === 'tab-erros' }" @click="mudarAba('tab-erros')">
+            Erros ({{ erros?.length || 0 }})
+          </button>
           <button class="tab" :class="{ active: abaAtiva === 'tab-logs' }" @click="mudarAba('tab-logs')">Logs</button>
         </div>
 
         <div v-show="abaAtiva === 'tab-erros'" class="tab-content active">
-          <div v-if="erros.length === 0" style="color: var(--texto-cinza); text-align: center; margin-top: 20px;">Nenhum erro encontrado.</div>
+          <div v-if="!erros || erros.length === 0" style="color: var(--texto-cinza); text-align: center; margin-top: 20px;">Nenhum erro encontrado.</div>
           <div v-else>
             <div v-for="(erro, index) in erros" :key="index" class="log-entry erro">{{ erro }}</div>
           </div>
@@ -182,11 +184,9 @@ async function compilar() {
       erros.value = []
       logs.value.push("✅ Compilação finalizada com sucesso!")
       processarArvore(dados.arvoreSintatica)
-
-      // Muda automaticamente para a aba da árvore para mostrar o resultado!
-      mudarVisao('visao-arvore')
+      mudarVisao('visao-arvore')  // Abre a aba da arvore automaticamente
     } else {
-      erros.value = dados.erros
+      erros.value = dados.erros || []
       logs.value.push("❌ Erros encontrados durante a compilação.")
       nosDaArvore.value = []
       linhasDaArvore.value = []
