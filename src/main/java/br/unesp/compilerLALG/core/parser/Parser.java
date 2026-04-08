@@ -23,58 +23,90 @@ public class Parser {
     private final List<CompilerException.SyntaxException> listaErrosSintaticos = new ArrayList<>();
 
     // Conjuntos First (Para escolher qual caminho seguir na EBNF)
-    // FIRST(<bloco>) -> pode começar um bloco de código
+
+    // <bloco>
     private final Set<String> FIRST_BLOCO = Set.of(
-            "INT", "BOOLEAN", "IDENTIFICADOR", "PROCEDURE", "BEGIN"
+            "INT", "BOOLEAN", "PROCEDURE", "BEGIN"
+            // Nota: EPSILON é tratado na lógica dos IFs
     );
 
-    // FIRST(<parte de declarações de variáveis>) -> inicia a declaração de variáveis
+    // <parte_de_declarações_de_variáveis> e afins
     private final Set<String> FIRST_DECL_VAR = Set.of(
-            "INT", "BOOLEAN", "IDENTIFICADOR"
+            "INT", "BOOLEAN"
     );
 
-    // FIRST(<comando>) -> Todos os tokens que podem iniciar um comando válido
+    // <parte_de_declarações_de_subrotinas>
+    private final Set<String> FIRST_DECL_PROC = Set.of(
+            "PROCEDURE"
+    );
+
+    // <comando>
     private final Set<String> FIRST_COMANDO = Set.of(
-            "IDENTIFICADOR", "READ", "WRITE", "BEGIN", "IF", "WHILE"
+            "IDENTIFICADOR", "READ", "WRITE", "IF", "WHILE", "BEGIN"
     );
 
-    // FIRST(<expressão>) -> pode começar uma conta matemática ou lógica
+    // <expressão> e <lista_de_expressões>
+    // Engloba sinais (+, -), identificadores, números, '(', 'not', 'true', 'false'
     private final Set<String> FIRST_EXPRESSAO = Set.of(
             "OPSOMA", "OPSUB", "IDENTIFICADOR", "NUM", "ABREPAR", "OPNOT", "TRUE", "FALSE"
     );
 
-    // FIRST(<fator>) -> elementos mais básicos de uma expressão
+    // <termo> e <fator>
     private final Set<String> FIRST_FATOR = Set.of(
             "IDENTIFICADOR", "NUM", "ABREPAR", "OPNOT", "TRUE", "FALSE"
     );
 
-    // Conjuntos Follow (Para sair de loops e tratar erros - Panic Mode)
-
-    // FOLLOW(<bloco>) -> vem logo após um bloco terminar
-    private final Set<String> FOLLOW_BLOCO = Set.of(
-            "PONTO", "PONTOVIRGULA"
-    );
-
-    // FOLLOW(<parte de declarações de variáveis>) -> vem depois das variáveis
-    private final Set<String> FOLLOW_DECL_VAR = Set.of(
-            "PROCEDURE", "BEGIN"
-    );
-
-    // FOLLOW(<declaração de procedimento>) -> vem após declarar uma procedure
-    private final Set<String> FOLLOW_DECL_PROC = Set.of(
-            "PONTOVIRGULA", "BEGIN"
-    );
-
-    // FOLLOW(<comando>) -> pode aparecer LOGO APÓS um comando terminar
-    private final Set<String> FOLLOW_COMANDO = Set.of(
-            "PONTOVIRGULA", "END", "ELSE"
-    );
-
-    // FOLLOW(<expressão>) -> sinais que indicam que a expressão (conta) acabou
-    private final Set<String> FOLLOW_EXPRESSAO = Set.of(
-            "PONTOVIRGULA", "END", "ELSE", "THEN", "DO", "FECHAPAR", "VIRGULA",
+    // <relação>
+    private final Set<String> FIRST_RELACAO = Set.of(
             "OPIGUAL", "OPDIF", "OPMENOR", "OPMENORIGUAL", "OPMAIOR", "OPMAIORIGUAL"
     );
+
+    // <op> e <op2> e <op3> (Operadores Matemáticos e Lógicos)
+    private final Set<String> FIRST_OP_SOMA_SUB = Set.of("OPSOMA", "OPSUB");
+    private final Set<String> FIRST_OP_MUL_DIV = Set.of("OPMUL", "OPDIV", "OPAND");
+
+    // Conjuntos Follow (Para Sincronização / Panic Mode)
+
+    // FOLLOW(<programa>)
+    private final Set<String> FOLLOW_PROGRAMA = Set.of(
+            "EOF"
+    );
+
+    // FOLLOW(<bloco>)
+    private final Set<String> FOLLOW_BLOCO = Set.of(
+            "PONTO", "PONTOVIRGULA", "PROCEDURE", "BEGIN"
+    );
+
+    // FOLLOW(<declaração_de_variáveis>) e <parte_de_declarações...>
+    private final Set<String> FOLLOW_DECL_VAR = Set.of(
+            "PONTOVIRGULA", "INT", "BOOLEAN", "PROCEDURE", "PONTO", "BEGIN"
+    );
+
+    // FOLLOW(<declaração_de_procedimento>)
+    private final Set<String> FOLLOW_DECL_PROC = Set.of(
+            "PONTOVIRGULA", "PROCEDURE", "BEGIN"
+    );
+
+    // FOLLOW(<comando>)
+    // Usado para recuperar de erros ao escrever if, while, atribuições, etc.
+    private final Set<String> FOLLOW_COMANDO = Set.of(
+            "PONTOVIRGULA", "PONTO", "PROCEDURE", "BEGIN", "END", "ELSE"
+    );
+
+    // FOLLOW(<expressão>), <termo> e <fator>
+    // Usado para recuperar erros no meio de uma conta matemática ou relação lógica
+    private final Set<String> FOLLOW_EXPRESSAO = Set.of(
+            "PONTOVIRGULA", "PONTO", "PROCEDURE", "BEGIN", "END", "ELSE",
+            "THEN", "DO", "FECHAPAR", "VIRGULA"
+    );
+
+    // FOLLOW(<lista_de_identificadores>)
+    // pode ser seguida por ; (declaração normal), : (parametros) ou ) (leitura)
+    private final Set<String> FOLLOW_LISTA_ID = Set.of(
+            "PONTOVIRGULA", "INT", "BOOLEAN", "PROCEDURE", ".", "BEGIN", "DOISPONTOS"
+    );
+
+
 
     /* TODO:
         - Crie Listas de Strings (ou Set<String>) no topo da classe Parser
@@ -156,13 +188,13 @@ public class Parser {
 
     private void parseBloco() {
 
-        if (tokenAtual.getToken().equals("INT") || tokenAtual.getToken().equals("BOOLEAN")) {
+        if (FIRST_DECL_VAR.contains(tokenAtual.getToken())) {
             parseParteDeclaracaoVariaveis();
         }
 
-//        if (tokenAtual.getToken().equals("PROCEDURE")) {
-//            parseDeclaracaoProcedimentos();
-//        }
+        if (FIRST_DECL_PROC.contains(tokenAtual.getToken())) {
+            parseDeclaracaoProcedimentos();
+        }
 
         parseComandoComposto();
     }
@@ -172,7 +204,6 @@ public class Parser {
     }
 
     private void parseParteDeclaracaoVariaveis() {
-
 
         parseDeclaracaoVariaveis();
         match("PONTOVIRGULA");
@@ -216,61 +247,55 @@ public class Parser {
     }
 
     private void parseListaIdentificadores() {
-        match("IDENTIFICADOR");
+        if (tokenAtual.getToken().equals("IDENTIFICADOR")) {
+            match("IDENTIFICADOR");
+        } else {
+            listaErrosSintaticos.add(new CompilerException.TokenInesperadoException(
+                    "IDENTIFICADOR",
+                    tokenAtual.getToken(),
+                    tokenAtual.getLexema(),
+                    tokenAtual.getLinha(),
+                    tokenAtual.getColunaInicial()
+            ));
+            // Se nem o primeiro ID veio certo, sincroniza e aborta a lista
+            sincronizar(FOLLOW_LISTA_ID);
+            return;
+        }
 
         while (tokenAtual.getToken().equals("VIRGULA")) {
             match("VIRGULA");
-            match("IDENTIFICADOR");
+
+            if (tokenAtual.getToken().equals("IDENTIFICADOR")) {
+                match("IDENTIFICADOR");
+            } else {
+                listaErrosSintaticos.add(new CompilerException.TokenInesperadoException(
+                        "IDENTIFICADOR",
+                        tokenAtual.getToken(),
+                        tokenAtual.getLexema(),
+                        tokenAtual.getLinha(),
+                        tokenAtual.getColunaInicial()
+                ));
+                Set<String> syncSet = new HashSet<>(FOLLOW_LISTA_ID);
+                syncSet.add("VIRGULA");
+                sincronizar(syncSet);
+            }
         }
     }
 
     // <comando> ::= <comando_atribuicao> | <comando_leitura> | <comando_escrita>
     public void parseComando() {
 
-        switch (tokenAtual.getToken()) {
-            case "READ" -> parseComandoLeitura();
-
-            case "WRITE" -> parseComandoEscrita();
-
-            // Dentro do switch do seu parseComando():
-            case "IDENTIFICADOR" -> {
-                match("IDENTIFICADOR");
-
-                // Fatoração: Olha para o PRÓXIMO token para decidir
-                if (tokenAtual.getToken().equals("ATRIBUICAO")) { // :=
-                    parseComandoAtribuicao();
-                } else if (tokenAtual.getToken().equals("ABREPAR")) { // (
-                    // É uma chamada de procedimento com parâmetros
-                    match("ABREPAR");
-                    // parseListaExpressoes();
-                    match("FECHAPAR");
-                } else {
-                    // Chamada de procedimento sem parâmetros (ex: limpar_tela;)
-                    // Não faz nada, já consumiu o identificador.
-                }
-            }
-
-            case "BEGIN" -> parseComandoComposto();
-
-            case "IF" -> parseComandoIf();
-
-            case "ELSE" -> {
-
-            }
-            case "WHILE" -> parseComandoWhile();
-
-            default -> {
-                listaErrosSintaticos.add(new CompilerException.ComandoInvalidoException(
-                        tokenAtual.getLexema(),
-                        tokenAtual.getLinha(),
-                        tokenAtual.getColunaInicial()
-                ));
-
-                // Dispara o Panic-Mode para tentar salvar o resto da compilação
-                sincronizar(FOLLOW_COMANDO);
-            }
+        if (!FIRST_COMANDO.contains(tokenAtual.getToken())) {
+            listaErrosSintaticos.add(new CompilerException.TokenInesperadoException(
+                    "Início de comando válido (IDENTIFICADOR, READ, WRITE, IF, WHILE, BEGIN)",
+                    tokenAtual.getToken(),
+                    tokenAtual.getLexema(),
+                    tokenAtual.getLinha(),
+                    tokenAtual.getColunaInicial()
+            ));
+            sincronizar(FOLLOW_COMANDO);
+            return; // Sai do metodo para evitar cascata de erros
         }
-
 
     }
 
@@ -291,8 +316,12 @@ public class Parser {
     }
 
     private void parseComandoAtribuicao() {
-        match("ATRIBUICAO");
-        // expressão();
+        try {
+            match("ATRIBUICAO"); // :=
+            expressao();
+        } catch(CompilerException.SyntaxException e) {
+            sincronizar(FOLLOW_COMANDO);
+        }
     }
 
     private void parseComandoEscrita() {
@@ -302,7 +331,6 @@ public class Parser {
     private void parseComandoLeitura() {
 
     }
-
 
     // <lista_comandos> ::= <comando> { ; <comando> }
     public void parseListaComandos() {
@@ -322,86 +350,10 @@ public class Parser {
         }
     }
 
-
-    public ASTnode parse() {
-        return expressao();
-    }
-
-
-    public ASTnode fator() {
-        Token tokenAtual = tokens.get(pos);
-//        switch (tokenAtual.getToken()) {
-//            case "EOF" -> throw new RuntimeException("Expressão incompleta. Faltou um número.");
-//            case "NUM" -> {
-//                pos++; // "come" o número
-//
-//                // Verifica se o Lexer mandou um texto vazio antes de converter
-//                String textoDoNumero = tokenAtual.getLexema();
-//                if (textoDoNumero == null || textoDoNumero.trim().isEmpty()) {
-//                    throw new RuntimeException("Erro interno no Lexer: Um número vazio foi gerado.");
-//                }
-//
-//                try {
-//                    return new NumNode();
-//                } catch (NumberFormatException e) {
-//                    throw new RuntimeException("Erro ao converter para número: '" + textoDoNumero + "'");
-//                }
-//            }
-//            case "AP" -> {
-//                pos++; // "come" o parêntese de abertura
-//
-//
-//                // resolve tudo que está dentro do oarenteses
-//                ASTnode expressaoInterna = expressao();
-//
-//                // verifica se fehcou o parêntese corretamente
-//                if (pos < tokens.size() && tokens.get(pos).getToken().equals("FP")) {
-//                    pos++; // "come" o parêntese de fechamento
-//                    return expressaoInterna;
-//                } else {
-//                    throw new RuntimeException("Erro de Sintaxe: Esperado ')' na coluna " + tokenAtual.getColunaFinal());
-//                }
-//            }
-//        }
-//        throw new RuntimeException("Erro de Sintaxe: Token inesperado '" + tokenAtual.getLexema());
-        return null;
-    }
-
-    // resolve multiplicação e divisão
-    public void termo() {
-//        ASTnode noEsquerda = fator();
-//
-//        while (pos < tokens.size() && (tokens.get(pos).getToken().equals("OPMUL") || tokens.get(pos).getToken().equals("OPDIV"))) {
-//
-//            String operador = tokens.get(pos).getLexema();
-//            pos++;
-//
-//            ASTnode noDireita = fator();
-//
-//            //noEsquerda = new BinOpNode(noEsquerda, operador, noDireita);
-//
-//        }
-//        // Se entrou no while, devolve a árvore de multiplicação.
-//        // Se não entrou, devolve o número puro intacto.
+    private void expressao() {
 
     }
 
-    // resolve adição e subtração
-    public ASTnode expressao() {
-//        ASTnode noEsquerda = termo();
-//
-//        while (pos < tokens.size() && (tokens.get(pos).getToken().equals("OPSOMA") || tokens.get(pos).getToken().equals("OPSUB"))) {
-//
-//            String operador = tokens.get(pos).getLexema();
-//            pos++;
-//
-//            ASTnode noDireita = termo();
-//
-//            noEsquerda = new BinOpNode(noEsquerda, operador, noDireita);
-//        }
-//        return noEsquerda;
-        return null;
-    }
 
     public List<CompilerException.SyntaxException> getErros() {
         return listaErrosSintaticos;

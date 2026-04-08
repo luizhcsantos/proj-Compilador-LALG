@@ -37,7 +37,7 @@
             <div class="card-icon" style="background: #a390eb;">🏷️</div>
             Léxica
           </div>
-          <div class="card-number">0 <span class="card-label">tokens</span></div>
+          <div class="card-number">{{ listaTokens.length }} <span class="card-label">tokens</span></div>
         </div>
 
         <div class="card card-clickable" :class="{ destaque: visaoAtiva === 'visao-simbolos' }" @click="mudarVisao('visao-simbolos')">
@@ -77,7 +77,32 @@
         </div>
 
         <div v-show="visaoAtiva === 'visao-lexemas'" class="tabela-container">
-          <h3 style="padding: 20px; color: var(--texto-cinza);">Tabela de Lexemas em construção...</h3>
+          <table>
+            <thead>
+            <tr>
+              <th>Lexema</th>
+              <th>Token</th>
+              <th>Linha</th>
+              <th>Col. Inicial</th>
+              <th>Col. Final</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr v-if="listaTokens.length === 0">
+              <td colspan="5" style="text-align: center; color: var(--texto-cinza); padding: 20px;">
+                Compile o código para gerar lexemas.
+              </td>
+            </tr>
+
+            <tr v-for="(tk, index) in listaTokens" :key="index">
+              <td><strong>{{ tk.lexema }}</strong></td>
+              <td><span class="token-tag">{{ tk.token }}</span></td>
+              <td>{{ tk.linha }}</td>
+              <td>{{ tk.colunaInicial }}</td>
+              <td>{{ tk.colunaFinal }}</td>
+            </tr>
+            </tbody>
+          </table>
         </div>
 
         <div v-show="visaoAtiva === 'visao-arvore'" style="height: 100%; border: 1px solid var(--borda); border-radius: 12px; overflow: hidden; background: white;">
@@ -125,7 +150,7 @@ import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
 
 // === VARIÁVEIS DE ESTADO DA INTERFACE ===
-const codigoFonte = ref('program ola_mundo;\nvar a: int;\nbegin\n   a := 10;\nend.')
+const codigoFonte = ref('program ola_mundo;\nint a; \nbegin\n   a := 10;\nend.')
 const visaoAtiva = ref('visao-editor') // Controla a tela principal (editor, lexemas, arvore)
 const abaAtiva = ref('tab-logs')       // Controla o console inferior
 const menuTemaAberto = ref(false)
@@ -135,6 +160,7 @@ const linhasDigitadas = ref(5)
 // === VARIÁVEIS DO COMPILADOR ===
 const erros = ref([])
 const logs = ref(['Aguardando compilação...'])
+const listaTokens = ref([])
 const nosDaArvore = ref([])
 const linhasDaArvore = ref([])
 const totalNos = ref(0)
@@ -178,11 +204,19 @@ async function compilar() {
       body: JSON.stringify({ codigo: codigoFonte.value })
     })
 
+    if (!resposta.ok) {
+      throw new Error(`Erro do Servidor HTTP: ${resposta.status}`);
+    }
+
     const dados = await resposta.json()
 
     if (dados.sucesso) {
+
       erros.value = []
       logs.value.push("✅ Compilação finalizada com sucesso!")
+      listaTokens.value = dados.tokens || []
+      logs.value.push("✅ Análise léxica concluída com sucesso!")
+      mudarVisao('visao-lexemas')
       processarArvore(dados.arvoreSintatica)
       mudarVisao('visao-arvore')  // Abre a aba da arvore automaticamente
     } else {

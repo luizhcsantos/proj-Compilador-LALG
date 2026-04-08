@@ -23,7 +23,7 @@ public class CalculadoraEngine {
 
            // Parser transforma tokens em AST
            Parser parser = new Parser(tokens);
-           ASTnode astRaiz = parser.parse();
+           //ASTnode astRaiz = parser.parse();
 
            // Evaluator calcula o resultado da AST
 //           evaluator eval = new evaluator();
