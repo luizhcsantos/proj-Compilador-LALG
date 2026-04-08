@@ -1,6 +1,6 @@
 package br.unesp.compilerLALG.core.parser.ast;
 
-public class BinOpNode extends ASTnode {
+public class BinOpNode {
 
     private final ASTnode left;
     private final String op;

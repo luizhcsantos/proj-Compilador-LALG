@@ -9,11 +9,16 @@ public abstract class ASTnode {
     private String valor;
     private List<ASTnode> filhos = new ArrayList<>();
 
-    public ASTnode() {
+    public ASTnode(String nome, String valor) {
+        this.nome = nome;
+        this.valor = valor;
+        this.filhos = new ArrayList<>();
     }
 
     public void addFilhos(ASTnode filho) {
-        this.filhos.add(filho);
+        if(filho != null) {
+            this.filhos.add(filho);
+        }
     }
 
     public String getNome() {
@@ -36,7 +41,4 @@ public abstract class ASTnode {
         return filhos;
     }
 
-    public void setFilhos(List<ASTnode> filhos) {
-        this.filhos = filhos;
-    }
 }

@@ -26,11 +26,12 @@ public class CalculadoraEngine {
            ASTnode astRaiz = parser.parse();
 
            // Evaluator calcula o resultado da AST
-           evaluator eval = new evaluator();
-
-
-           // Retorna o valor final
-           return eval.visit(astRaiz);
+//           evaluator eval = new evaluator();
+//
+//
+//           // Retorna o valor final
+//           return eval.visit(astRaiz);
+           return 0;
        }catch (RuntimeException e) {
            throw new CompilerException(e.getMessage());
        }
@@ -39,28 +40,28 @@ public class CalculadoraEngine {
 
     public static class evaluator {
 
-        public double visit(ASTnode node) {
-            if (node instanceof NumNode) {
-                return ((NumNode) node).getValue();
-            }
-            else if (node instanceof BinOpNode binOpNode) {
-                double leftValue = visit(binOpNode.getLeft());
-                double rightValue = visit(binOpNode.getRight());
-                System.out.println("Calculando: " + leftValue + " " + binOpNode.getOp() + " " + rightValue);
-                return switch (binOpNode.getOp()) {
-                    case "+" -> leftValue + rightValue;
-                    case "-" -> leftValue - rightValue;
-                    case "*" -> leftValue * rightValue;
-                    case "/" -> {
-                        if (rightValue == 0) {
-                            throw new ArithmeticException("Divisão por zero");
-                        }
-                        yield leftValue / rightValue;
-                    }
-                    default -> throw new IllegalArgumentException("Operação desconhecida: " + binOpNode.getOp());
-                };
-            }
-            return 0;
-        }
+//        public double visit(ASTnode node) {
+//            if (node instanceof NumNode) {
+//                return ((NumNode) node).getValue();
+//            }
+//            else if (node instanceof BinOpNode binOpNode) {
+//                double leftValue = visit(binOpNode.getLeft());
+//                double rightValue = visit(binOpNode.getRight());
+//                System.out.println("Calculando: " + leftValue + " " + binOpNode.getOp() + " " + rightValue);
+//                return switch (binOpNode.getOp()) {
+//                    case "+" -> leftValue + rightValue;
+//                    case "-" -> leftValue - rightValue;
+//                    case "*" -> leftValue * rightValue;
+//                    case "/" -> {
+//                        if (rightValue == 0) {
+//                            throw new ArithmeticException("Divisão por zero");
+//                        }
+//                        yield leftValue / rightValue;
+//                    }
+//                    default -> throw new IllegalArgumentException("Operação desconhecida: " + binOpNode.getOp());
+//                };
+//            }
+//            return 0;
+//        }
     }
 }

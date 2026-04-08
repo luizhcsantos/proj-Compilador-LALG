@@ -11,7 +11,10 @@ public class CompilacaoResponse {
     private String mensagem;
     private List<Token> tokens;
     private List<String> lsitaErros;
-    private ASTnode arvoreSintatica; 
+    private ASTnode arvoreSintatica;
+
+    public CompilacaoResponse() {
+    }
 
     public CompilacaoResponse(boolean sucesso, String mensagem, List<Token> tokens, List<String> lsitaErros) {
         this.sucesso = sucesso;
@@ -24,9 +27,11 @@ public class CompilacaoResponse {
     public String getMensagem() { return mensagem; }
     public List<Token> getTokens() { return tokens; }
     public List<String> getLsitaErros() { return lsitaErros; }
+    public  ASTnode getArvoreSintatica() { return arvoreSintatica; }
 
     public void setSucesso(boolean sucesso) { this.sucesso = sucesso; }
     public void setMensagem(String mensagem) { this.mensagem = mensagem; }
     public void setTokens(List<Token> tokens) { this.tokens = tokens; }
     public void setLsitaErros(List<String> lsitaErros) { this.lsitaErros = lsitaErros; }
+    public void setArvoreSintatica(ASTnode arvoreSintatica) { this.arvoreSintatica = arvoreSintatica; }
 }

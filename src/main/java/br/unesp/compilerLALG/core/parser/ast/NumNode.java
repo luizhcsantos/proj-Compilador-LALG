@@ -1,14 +1,8 @@
 package br.unesp.compilerLALG.core.parser.ast;
 
-public class NumNode extends ASTnode {
+public class NumNode {
 
-    private final double value;
+    public NumNode() {
 
-    public NumNode(double value) {
-        this.value = value;
-    }
-
-    public double getValue() {
-        return value;
     }
 }
