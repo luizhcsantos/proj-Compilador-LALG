@@ -283,6 +283,8 @@ public class Parser {
     // <comando> ::= <comando_atribuicao> | <comando_leitura> | <comando_escrita>
     public void parseComando() {
 
+
+        //
         if (!FIRST_COMANDO.contains(tokenAtual.getToken())) {
             listaErrosSintaticos.add(new CompilerException.TokenInesperadoException(
                     "Início de comando válido (IDENTIFICADOR, READ, WRITE, IF, WHILE, BEGIN)",
@@ -364,6 +366,8 @@ public class Parser {
 
             while (tokenAtual.getToken().equals("PONTOVIRGULA")) {
                 match("PONTOVIRGULA");
+                // verificar pq aqui, ao encontrar um token do tipo END,
+                // um erro sintático está sendo criado, mesmo estando correto
                 parseComando();
             }
         } catch (RuntimeException e) {

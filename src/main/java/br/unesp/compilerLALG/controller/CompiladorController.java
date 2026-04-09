@@ -40,6 +40,10 @@ public class CompiladorController {
             response.setErros(lexer.getErros().stream().map(Throwable::getMessage).toList());
         } else {
             response.setTokens(tokens);
+            System.out.println("tokens: ");
+            for (Token token : tokens) {
+                System.out.println(token.getToken());
+            }
         }
 
         Parser parser = new Parser(tokens);
