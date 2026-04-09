@@ -59,22 +59,22 @@ public class CompiladorController {
 
             // MOCK TEMPORÁRIO PARA VER A ÁRVORE NO VUE.JS
             // aqui entrará o código real da árvore gerada
-            java.util.Map<String, Object> folhaEsq = new java.util.HashMap<>();
-            folhaEsq.put("nome", "Variável");
-            folhaEsq.put("valor", "a");
-
-            java.util.Map<String, Object> folhaDir = new java.util.HashMap<>();
-            folhaDir.put("nome", "Número");
-            folhaDir.put("valor", "10");
-
-            java.util.Map<String, Object> raiz = new java.util.HashMap<>();
-            raiz.put("nome", "Atribuição");
-            raiz.put("valor", ":=");
-            raiz.put("filhos", java.util.List.of(folhaEsq, folhaDir));
-
-            // (Você precisa mudar o tipo da variável arvoreSintatica na classe
-            // CompilacaoResponse para Object temporariamente para isso funcionar)
-            response.setArvoreSintatica((noArvoreDTO) raiz);
+//            br.unesp.compilerLALG.core.parser.ast.noArvoreDTO folhaEsq =
+//                    new br.unesp.compilerLALG.core.parser.ast.noArvoreDTO("Variável", "a");
+//
+//            br.unesp.compilerLALG.core.parser.ast.noArvoreDTO folhaDir =
+//                    new br.unesp.compilerLALG.core.parser.ast.noArvoreDTO("Número", "10");
+//
+//            br.unesp.compilerLALG.core.parser.ast.noArvoreDTO raiz =
+//                    new br.unesp.compilerLALG.core.parser.ast.noArvoreDTO("Atribuição", ":=");
+//
+//            // Adiciona as folhas na raiz
+//            raiz.addFilhos(folhaEsq);
+//            raiz.addFilhos(folhaDir);
+//
+//            // Agora o Java aceita sem reclamar!
+//            response.setArvoreSintatica(raiz);
+            response.setArvoreSintatica(parser.getRaizArvore());
         }
 
         return ResponseEntity.ok(response);

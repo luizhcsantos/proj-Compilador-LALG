@@ -16,6 +16,7 @@ public class Parser {
     private int posicaoAtual;
     private Token tokenAtual;
     private int pos = 0;
+    private noArvoreDTO raizArvore;
 
     // Lista para guardar os erros sintáticos (Panic Mode)
     private final List<CompilerException.SyntaxException> listaErrosSintaticos = new ArrayList<>();
@@ -176,15 +177,22 @@ public class Parser {
     // Programa ::= PROGRAM <identificador> ; <bloco> .
     public void parsePrograma() {
         match("PROGRAM");
+
+        String nomePrograma = tokenAtual.getLexema();
         match("IDENTIFICADOR");
         match("PONTOVIRGULA");
 
-        parseBloco();
+        raizArvore = new noArvoreDTO("Programa", nomePrograma);
+
+        noArvoreDTO noBloco = parseBloco();
+        if (noBloco != null) { raizArvore.addFilhos(noBloco); }
 
         match("PONTO");
     }
 
-    private void parseBloco() {
+    private noArvoreDTO parseBloco() {
+
+        noArvoreDTO bloco = new noArvoreDTO("Bloco", "");
 
         if (FIRST_DECL_VAR.contains(tokenAtual.getToken())) {
             parseParteDeclaracaoVariaveis();
@@ -194,7 +202,13 @@ public class Parser {
             parseDeclaracaoProcedimentos();
         }
 
-        parseComandoComposto();
+        noArvoreDTO noComandos = parseComandoComposto();
+        if (noComandos != null) {
+            bloco.addFilhos(noComandos);
+        }
+
+        return bloco;
+
     }
 
     private void parseDeclaracaoProcedimentos() {
@@ -281,8 +295,9 @@ public class Parser {
     }
 
     // <comando> ::= <comando_atribuicao> | <comando_leitura> | <comando_escrita>
-    public void parseComando() {
+    public noArvoreDTO parseComando() {
 
+        noArvoreDTO noComando = new noArvoreDTO("Comando", "");
 
         //
         if (!FIRST_COMANDO.contains(tokenAtual.getToken())) {
@@ -294,15 +309,16 @@ public class Parser {
                     tokenAtual.getColunaInicial()
             ));
             sincronizar(FOLLOW_COMANDO);
-            return; // Sai do metodo para evitar cascata de erros
+            return noComando; // Sai do metodo para evitar cascata de erros
         }
 
-        switch(tokenAtual.getToken()) {
+        switch (tokenAtual.getToken()) {
             case "IDENTIFICADOR" -> {
+                String nomeVariavelOuProcedimento = tokenAtual.getLexema();
                 match("IDENTIFICADOR");
 
                 if (tokenAtual.getToken().equals("ATRIBUICAO")) {
-                    parseComandoAtribuicao();
+                    return parseComandoAtribuicao(nomeVariavelOuProcedimento);
                 } else if (tokenAtual.getToken().equals("ABREPAR")) {
                     match("ABREPAR");
                     // parseListaExpressoes();
@@ -314,18 +330,27 @@ public class Parser {
             }
             case "READ" -> parseComandoLeitura();
             case "WRITE" -> parseComandoEscrita();
-            case "BEGIN" -> parseComandoComposto();
+            case "BEGIN" -> {
+                noComando = parseComandoComposto();
+
+            }
             case "IF" -> parseComandoIf();
             case "WHILE" -> parseComandoWhile();
         }
 
+        return noComando;
+
     }
 
-    private void parseComandoComposto() {
+    private noArvoreDTO parseComandoComposto() {
+
+        noArvoreDTO noComando = new noArvoreDTO("Composto", "");
 
         match("BEGIN");
-        parseListaComandos();
+        noComando = parseListaComandos();
         match("END");
+
+        return noComando;
     }
 
     private void parseComandoWhile() {
@@ -346,7 +371,7 @@ public class Parser {
             noArvoreDTO noAtribuicao = new noArvoreDTO("Atribuicao", ":=");
             noAtribuicao.addFilhos(variavelEsquerda);
             noAtribuicao.addFilhos(resultadoMatematica);
-        } catch(CompilerException.SyntaxException e) {
+        } catch (CompilerException.SyntaxException e) {
             sincronizar(FOLLOW_COMANDO);
         }
     }
@@ -360,84 +385,96 @@ public class Parser {
     }
 
     // <lista_comandos> ::= <comando> { ; <comando> }
-    public void parseListaComandos() {
-        try {
-            parseComando();
+    public noArvoreDTO parseListaComandos() {
 
-            while (tokenAtual.getToken().equals("PONTOVIRGULA")) {
-                match("PONTOVIRGULA");
-                // verificar pq aqui, ao encontrar um token do tipo END,
-                // um erro sintático está sendo criado, mesmo estando correto
-                parseComando();
-            }
-        } catch (RuntimeException e) {
+        noArvoreDTO lista = new noArvoreDTO("Lista de Comandos", "");
+
+        noArvoreDTO cmd = parseComando();
+        if (cmd != null) { lista.addFilhos(cmd); }
+
+//        try {
+        parseComando();
+
+        while (tokenAtual.getToken().equals("PONTOVIRGULA")) {
+            match("PONTOVIRGULA");
+
+            if (tokenAtual.getToken().equals("END")) break;
+
+            noArvoreDTO proximoCmd = parseComando();
+            if (proximoCmd != null) { lista.addFilhos(proximoCmd); }
+//            }
+//        } catch (RuntimeException e) {
             // anota o erro (no futuro, pode adicionar numa lista de erros sintáticos)
-            System.err.println(e.getMessage());
+//            System.err.println(e.getMessage());
 
             // aciona o Panic Mode para pular até o fim do comando problemático
-            sincronizar(FOLLOW_COMANDO);
+//            sincronizar(FOLLOW_COMANDO);
         }
-    }
+        return lista;
+        }
 
-    private noArvoreDTO expressao() {
-        if (!FIRST_EXPRESSAO.contains(tokenAtual.getToken())) {
+        private noArvoreDTO expressao () {
+            if (!FIRST_EXPRESSAO.contains(tokenAtual.getToken())) {
+                listaErrosSintaticos.add(new CompilerException.TokenInesperadoException(
+                        "Inicio de expressão válido (Numero,variável ou parenteses)",
+                        tokenAtual.getToken(),
+                        tokenAtual.getLexema(),
+                        tokenAtual.getLinha(),
+                        tokenAtual.getColunaInicial()
+                ));
+                sincronizar(FOLLOW_EXPRESSAO);
+                return null;
+            }
+            noArvoreDTO noEsquerda = termo();
+            while (tokenAtual.getToken().equals("OPSOMA")) {
+                String operador = tokenAtual.getLexema();
+                match("SOMA");
+
+                noArvoreDTO noDireita = termo();
+
+                noArvoreDTO noPai = new noArvoreDTO("Soma", operador);
+                noPai.addFilhos(noEsquerda);
+                noEsquerda.addFilhos(noDireita);
+
+                noEsquerda = noPai;
+            }
+
+            return noEsquerda;
+        }
+
+        public noArvoreDTO termo () {
+            // Mock rápido: Lê apenas identificadores ou números
+            if (tokenAtual.getToken().equals("IDENTIFICADOR")) {
+                noArvoreDTO no = new noArvoreDTO("Variável", tokenAtual.getLexema());
+                match("IDENTIFICADOR");
+                return no;
+            } else if (tokenAtual.getToken().equals("NUM")) {
+                noArvoreDTO no = new noArvoreDTO("Número", tokenAtual.getLexema());
+                match("NUM");
+                return no;
+            }
+
+            // Se cair aqui, era algo inválido no meio da conta
             listaErrosSintaticos.add(new CompilerException.TokenInesperadoException(
-                    "Inicio de expressão válido (Numero,variável ou parenteses)",
+                    "Tipo esperado: IDENTIFICADOR ou NUM",
                     tokenAtual.getToken(),
                     tokenAtual.getLexema(),
                     tokenAtual.getLinha(),
-                    tokenAtual.getColunaInicial()
-            ));
+                    tokenAtual.getColunaInicial()));
             sincronizar(FOLLOW_EXPRESSAO);
             return null;
         }
-        noArvoreDTO noEsquerda = termo();
-        while (tokenAtual.getToken().equals("OPSOMA")) {
-            String operador =  tokenAtual.getLexema();
-            match("SOMA");
 
-            noArvoreDTO noDireita = termo();
 
-            noArvoreDTO noPai = new noArvoreDTO("Soma", operador);
-            noPai.addFilhos(noEsquerda);
-            noEsquerda.addFilhos(noDireita);
-
-            noEsquerda = noPai;
+        public List<CompilerException.SyntaxException> getErros () {
+            return listaErrosSintaticos;
         }
 
-        return noEsquerda;
-    }
-
-    public noArvoreDTO termo() {
-        // Mock rápido: Lê apenas identificadores ou números
-        if (tokenAtual.getToken().equals("IDENTIFICADOR")) {
-            noArvoreDTO no = new noArvoreDTO("Variável", tokenAtual.getLexema());
-            match("IDENTIFICADOR");
-            return no;
-        }
-        else if (tokenAtual.getToken().equals("NUM")) {
-            noArvoreDTO no = new noArvoreDTO("Número", tokenAtual.getLexema());
-            match("NUM");
-            return no;
+        public boolean temErros () {
+            return !listaErrosSintaticos.isEmpty();
         }
 
-        // Se cair aqui, era algo inválido no meio da conta
-        listaErrosSintaticos.add(new CompilerException.TokenInesperadoException(
-                "Tipo esperado: IDENTIFICADOR ou NUM",
-                tokenAtual.getToken(),
-                tokenAtual.getLexema(),
-                tokenAtual.getLinha(),
-                tokenAtual.getColunaInicial()));
-        sincronizar(FOLLOW_EXPRESSAO);
-        return null;
+        public noArvoreDTO getRaizArvore () {
+            return raizArvore;
+        }
     }
-
-
-    public List<CompilerException.SyntaxException> getErros() {
-        return listaErrosSintaticos;
-    }
-
-    public boolean temErros() {
-        return !listaErrosSintaticos.isEmpty();
-    }
-}
