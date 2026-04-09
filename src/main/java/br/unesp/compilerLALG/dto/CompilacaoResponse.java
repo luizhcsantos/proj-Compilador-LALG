@@ -1,7 +1,7 @@
 package br.unesp.compilerLALG.dto;
 
 import br.unesp.compilerLALG.core.lexer.Token;
-import br.unesp.compilerLALG.core.parser.ast.ASTnode;
+import br.unesp.compilerLALG.core.parser.ast.noArvoreDTO;
 
 import java.util.List;
 
@@ -33,5 +33,5 @@ public class CompilacaoResponse {
     public void setMensagem(String mensagem) { this.mensagem = mensagem; }
     public void setTokens(List<Token> tokens) { this.tokens = tokens; }
     public void setErros(List<String> erros) { this.erros = erros; }
-    public void setArvoreSintatica(ASTnode arvoreSintatica) { this.arvoreSintatica = arvoreSintatica; }
+    public void setArvoreSintatica(noArvoreDTO arvoreSintatica) { this.arvoreSintatica = arvoreSintatica; }
 }

@@ -3,7 +3,7 @@ package br.unesp.compilerLALG.controller;
 import br.unesp.compilerLALG.core.lexer.Lexer;
 import br.unesp.compilerLALG.core.lexer.Token;
 import br.unesp.compilerLALG.core.parser.Parser;
-import br.unesp.compilerLALG.core.parser.ast.ASTnode;
+import br.unesp.compilerLALG.core.parser.ast.noArvoreDTO;
 import br.unesp.compilerLALG.dto.CompilacaoRequest;
 import br.unesp.compilerLALG.dto.CompilacaoResponse;
 import org.springframework.http.ResponseEntity;
@@ -70,7 +70,7 @@ public class CompiladorController {
 
             // (Você precisa mudar o tipo da variável arvoreSintatica na classe
             // CompilacaoResponse para Object temporariamente para isso funcionar)
-            response.setArvoreSintatica((ASTnode) raiz);
+            response.setArvoreSintatica((noArvoreDTO) raiz);
         }
 
         return ResponseEntity.ok(response);

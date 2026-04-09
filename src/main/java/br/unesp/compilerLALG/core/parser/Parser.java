@@ -1,9 +1,7 @@
 package br.unesp.compilerLALG.core.parser;
 
 import br.unesp.compilerLALG.core.lexer.Token;
-import br.unesp.compilerLALG.core.parser.ast.ASTnode;
-import br.unesp.compilerLALG.core.parser.ast.BinOpNode;
-import br.unesp.compilerLALG.core.parser.ast.NumNode;
+import br.unesp.compilerLALG.core.parser.ast.noArvoreDTO;
 import br.unesp.compilerLALG.exception.CompilerException;
 import org.jspecify.annotations.NonNull;
 
@@ -297,6 +295,28 @@ public class Parser {
             return; // Sai do metodo para evitar cascata de erros
         }
 
+        switch(tokenAtual.getToken()) {
+            case "IDENTIFICADOR" -> {
+                match("IDENTIFICADOR");
+
+                if (tokenAtual.getToken().equals("ATRIBUICAO")) {
+                    parseComandoAtribuicao();
+                } else if (tokenAtual.getToken().equals("ABREPAR")) {
+                    match("ABREPAR");
+                    // parseListaExpressoes();
+                    match("FECHAPAR");
+                } else {
+                    // Se não for := nem (, é uma chamada de procedimento sem parâmetros (ex: limpar_tela)
+                    // O identificador já foi consumido, então não precisamos fazer nada!
+                }
+            }
+            case "READ" -> parseComandoLeitura();
+            case "WRITE" -> parseComandoEscrita();
+            case "BEGIN" -> parseComandoComposto();
+            case "IF" -> parseComandoIf();
+            case "WHILE" -> parseComandoWhile();
+        }
+
     }
 
     private void parseComandoComposto() {
@@ -317,8 +337,13 @@ public class Parser {
 
     private void parseComandoAtribuicao() {
         try {
+            noArvoreDTO variavelEsquerda = new noArvoreDTO("Variável destino", "a");
             match("ATRIBUICAO"); // :=
-            expressao();
+
+            noArvoreDTO resultadoMatematica = expressao();
+            noArvoreDTO noAtribuicao = new noArvoreDTO("Atribuicao", ":=");
+            noAtribuicao.addFilhos(variavelEsquerda);
+            noAtribuicao.addFilhos(resultadoMatematica);
         } catch(CompilerException.SyntaxException e) {
             sincronizar(FOLLOW_COMANDO);
         }
@@ -350,8 +375,57 @@ public class Parser {
         }
     }
 
-    private void expressao() {
+    private noArvoreDTO expressao() {
+        if (!FIRST_EXPRESSAO.contains(tokenAtual.getToken())) {
+            listaErrosSintaticos.add(new CompilerException.TokenInesperadoException(
+                    "Inicio de expressão válido (Numero,variável ou parenteses)",
+                    tokenAtual.getToken(),
+                    tokenAtual.getLexema(),
+                    tokenAtual.getLinha(),
+                    tokenAtual.getColunaInicial()
+            ));
+            sincronizar(FOLLOW_EXPRESSAO);
+            return null;
+        }
+        noArvoreDTO noEsquerda = termo();
+        while (tokenAtual.getToken().equals("OPSOMA")) {
+            String operador =  tokenAtual.getLexema();
+            match("SOMA");
 
+            noArvoreDTO noDireita = termo();
+
+            noArvoreDTO noPai = new noArvoreDTO("Soma", operador);
+            noPai.addFilhos(noEsquerda);
+            noEsquerda.addFilhos(noDireita);
+
+            noEsquerda = noPai;
+        }
+
+        return noEsquerda;
+    }
+
+    public noArvoreDTO termo() {
+        // Mock rápido: Lê apenas identificadores ou números
+        if (tokenAtual.getToken().equals("IDENTIFICADOR")) {
+            noArvoreDTO no = new noArvoreDTO("Variável", tokenAtual.getLexema());
+            match("IDENTIFICADOR");
+            return no;
+        }
+        else if (tokenAtual.getToken().equals("NUM")) {
+            noArvoreDTO no = new noArvoreDTO("Número", tokenAtual.getLexema());
+            match("NUM");
+            return no;
+        }
+
+        // Se cair aqui, era algo inválido no meio da conta
+        listaErrosSintaticos.add(new CompilerException.TokenInesperadoException(
+                "Tipo esperado: IDENTIFICADOR ou NUM",
+                tokenAtual.getToken(),
+                tokenAtual.getLexema(),
+                tokenAtual.getLinha(),
+                tokenAtual.getColunaInicial()));
+        sincronizar(FOLLOW_EXPRESSAO);
+        return null;
     }
 
 

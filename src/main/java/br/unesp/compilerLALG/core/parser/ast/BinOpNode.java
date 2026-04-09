@@ -2,17 +2,17 @@ package br.unesp.compilerLALG.core.parser.ast;
 
 public class BinOpNode {
 
-    private final ASTnode left;
+    private final noArvoreDTO left;
     private final String op;
-    private final ASTnode right;
+    private final noArvoreDTO right;
 
-    public BinOpNode(ASTnode left, String op, ASTnode right) {
+    public BinOpNode(noArvoreDTO left, String op, noArvoreDTO right) {
         this.left = left;
         this.op = op;
         this.right = right;
     }
 
-    public ASTnode getLeft() {
+    public noArvoreDTO getLeft() {
         return left;
     }
 
@@ -20,7 +20,7 @@ public class BinOpNode {
         return op;
     }
 
-    public ASTnode getRight() {
+    public noArvoreDTO getRight() {
         return right;
     }
 }

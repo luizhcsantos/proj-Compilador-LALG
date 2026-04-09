@@ -4,9 +4,6 @@ import br.unesp.compilerLALG.exception.CompilerException;
 import br.unesp.compilerLALG.core.lexer.Lexer;
 import br.unesp.compilerLALG.core.lexer.Token;
 import br.unesp.compilerLALG.core.parser.Parser;
-import br.unesp.compilerLALG.core.parser.ast.ASTnode;
-import br.unesp.compilerLALG.core.parser.ast.BinOpNode;
-import br.unesp.compilerLALG.core.parser.ast.NumNode;
 
 import java.util.List;
 
@@ -23,7 +20,7 @@ public class CalculadoraEngine {
 
            // Parser transforma tokens em AST
            Parser parser = new Parser(tokens);
-           //ASTnode astRaiz = parser.parse();
+           //noArvoreDTO astRaiz = parser.parse();
 
            // Evaluator calcula o resultado da AST
 //           evaluator eval = new evaluator();
@@ -40,7 +37,7 @@ public class CalculadoraEngine {
 
     public static class evaluator {
 
-//        public double visit(ASTnode node) {
+//        public double visit(noArvoreDTO node) {
 //            if (node instanceof NumNode) {
 //                return ((NumNode) node).getValue();
 //            }

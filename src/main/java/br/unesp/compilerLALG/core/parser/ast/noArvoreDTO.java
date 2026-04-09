@@ -3,19 +3,19 @@ package br.unesp.compilerLALG.core.parser.ast;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class ASTnode {
+public class noArvoreDTO {
 
     private String nome;
     private String valor;
-    private List<ASTnode> filhos = new ArrayList<>();
+    private List<noArvoreDTO> filhos = new ArrayList<>();
 
-    public ASTnode(String nome, String valor) {
+    public noArvoreDTO(String nome, String valor) {
         this.nome = nome;
         this.valor = valor;
         this.filhos = new ArrayList<>();
     }
 
-    public void addFilhos(ASTnode filho) {
+    public void addFilhos(noArvoreDTO filho) {
         if(filho != null) {
             this.filhos.add(filho);
         }
@@ -37,7 +37,7 @@ public abstract class ASTnode {
         this.valor = valor;
     }
 
-    public List<ASTnode> getFilhos() {
+    public List<noArvoreDTO> getFilhos() {
         return filhos;
     }
 
