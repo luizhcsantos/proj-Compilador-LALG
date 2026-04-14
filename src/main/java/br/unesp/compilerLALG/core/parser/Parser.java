@@ -406,7 +406,6 @@ public class Parser {
         if (cmd != null) { lista.addFilhos(cmd); }
 
 //        try {
-        parseComando();
 
         while (tokenAtual.getToken().equals("PONTOVIRGULA")) {
             match("PONTOVIRGULA");
@@ -441,13 +440,13 @@ public class Parser {
             noArvoreDTO noEsquerda = termo();
             while (tokenAtual.getToken().equals("OPSOMA")) {
                 String operador = tokenAtual.getLexema();
-                match("SOMA");
+                match("OPSOMA");
 
                 noArvoreDTO noDireita = termo();
 
                 noArvoreDTO noPai = new noArvoreDTO("Soma", operador);
                 noPai.addFilhos(noEsquerda);
-                noEsquerda.addFilhos(noDireita);
+                noPai.addFilhos(noDireita);
 
                 noEsquerda = noPai;
             }
