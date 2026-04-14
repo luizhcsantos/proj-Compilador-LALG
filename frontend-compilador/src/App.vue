@@ -252,8 +252,15 @@ function processarArvore(noRaiz) {
     })
 
     if (idDoPai) {
-      edges.push({ id: `e_${idDoPai}-${meuId}`, source: idDoPai, target: meuId })
-    }
+      edges.push({
+        id: `e_${idDoPai}-${meuId}`,
+            source: idDoPai,
+            target: meuId,
+            type: 'smoothstep',
+            animated: true,
+            style: { strokeWidth: 3, stroke: '#000' },
+      })
+  }
 
     if (no.filhos && no.filhos.length > 0) {
 
