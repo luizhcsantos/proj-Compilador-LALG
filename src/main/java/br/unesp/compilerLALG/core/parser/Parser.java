@@ -141,7 +141,7 @@ public class Parser {
     public void analisar() {
         try {
             parsePrograma();
-            //System.out.println("Análise sintática concluída com sucesso!");
+            System.out.println("Análise sintática concluída com sucesso!");
 
             // Se terminou de analisar o programa, o próximo token DEVE ser o fim do arquivo.
             if (!tokenAtual.getToken().equals("EOF")) {
@@ -168,9 +168,11 @@ public class Parser {
 
     }
 
-    private void sincronizar(@NonNull Set<String> followSet) {
-        while (!followSet.contains(tokenAtual.getToken()) && !tokenAtual.getToken().equals("EOF")) {
-            avancar();
+    private void sincronizar(@NonNull Set<String> tokensSeguros) {
+        // Continua consumindo tokens até achar um que pertença ao conjunto seguro,
+        // ou até o arquivo acabar (EOF).
+        while (!tokensSeguros.contains(tokenAtual.getToken()) && !tokenAtual.getToken().equals("EOF")) {
+            avancar(); // Pega o próximo token do Lexer e joga o atual fora
         }
     }
 
