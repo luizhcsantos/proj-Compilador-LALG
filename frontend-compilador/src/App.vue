@@ -67,7 +67,7 @@
           <span>Abrir</span>
           <span>Salvar</span>
         </div>
-        <button class="btn-compilar" @click="compilar">Compilar <span class="btn-hint">ctrl + enter</span></button>
+        <button class="btn-compilar" @click="compilar">Compilar</button>
       </div>
 
       <div class="main-display-area">
@@ -150,7 +150,7 @@ import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
 
 // === VARIÁVEIS DE ESTADO DA INTERFACE ===
-const codigoFonte = ref('program ola_mundo;\nint a; \nbegin\n   a := 10;\nend.')
+const codigoFonte = ref('program ola_mundo;\nint a, b, soma; \nbegin\n   a := 10;\n   b := 5;\n   soma := a + b;\nend.')
 const visaoAtiva = ref('visao-editor') // Controla a tela principal (editor, lexemas, arvore)
 const abaAtiva = ref('tab-logs')       // Controla o console inferior
 const menuTemaAberto = ref(false)
@@ -164,6 +164,7 @@ const listaTokens = ref([])
 const nosDaArvore = ref([])
 const linhasDaArvore = ref([])
 const totalNos = ref(0)
+const edges = ref([])
 
 // === FUNÇÕES DA INTERFACE ===
 function mudarVisao(novaVisao) {
@@ -243,10 +244,11 @@ function processarArvore(noRaiz) {
     let meuId = `node_${idContador++}`
 
     nodes.push({
+      data: {label: no.valor ? `${no.nome}\n(${no.valor})` : no.nome},
       id: meuId,
-      position: { x: nivelX * 150, y: nivelY * 100 },
-      data: { label: no.valor ? `${no.nome}\n(${no.valor})` : no.nome },
-      style: { backgroundColor: '#4ade80', color: 'black', fontWeight: 'bold', borderRadius: '8px' }
+
+      position: {x: nivelX * 200, y: nivelY * 120},
+      style: {backgroundColor: '#a76a2f', color: 'black', fontWeight: 'bold', borderRadius: '8px'}
     })
 
     if (idDoPai) {
@@ -254,14 +256,17 @@ function processarArvore(noRaiz) {
     }
 
     if (no.filhos && no.filhos.length > 0) {
+
+      let centro = (no.filhos.length - 1) / 2;
+
       no.filhos.forEach((filho, index) => {
-        let deslocamentoX = index === 0 ? -1 : 1;
+        let deslocamentoX = (index - centro) * 1.5;
         percorrer(filho, meuId, nivelX + deslocamentoX, nivelY + 1)
       })
     }
   }
 
-  percorrer(noRaiz, null, 2, 0)
+  percorrer(noRaiz, null, 0, 0)
   nosDaArvore.value = nodes
   linhasDaArvore.value = edges
   totalNos.value = nodes.length
