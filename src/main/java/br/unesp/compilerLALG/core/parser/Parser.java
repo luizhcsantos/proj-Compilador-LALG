@@ -316,32 +316,32 @@ public class Parser {
 
         switch (tokenAtual.getToken()) {
             case "IDENTIFICADOR" -> {
+                // salva o nome da variável antes de consumir o token
                 String nomeVariavelOuProcedimento = tokenAtual.getLexema();
                 match("IDENTIFICADOR");
 
-                if (tokenAtual.getToken().equals("ATRIBUICAO")) {
+                if (tokenAtual.getToken().equals("ATRIBUICAO")) { // :=
                     return parseComandoAtribuicao(nomeVariavelOuProcedimento);
                 } else if (tokenAtual.getToken().equals("ABREPAR")) {
                     match("ABREPAR");
-                    // parseListaExpressoes();
+                    // noArvoreDTO parametros = parseListaExpressoes();
                     match("FECHAPAR");
+
+                    // Retorna um nó de Chamada de Procedimento (no futuro os parâmetros serão "pendurados" nele)
+                    return new noArvoreDTO("Chamada Procedimento", nomeVariavelOuProcedimento);
                 } else {
-                    // Se não for := nem (, é uma chamada de procedimento sem parâmetros (ex: limpar_tela)
-                    // O identificador já foi consumido, então não precisamos fazer nada!
+                    // Se não for := nem (, é uma chamada de procedimento sem parâmetros
+                    return new noArvoreDTO("Chamada Procedimento", nomeVariavelOuProcedimento);
                 }
             }
-            case "READ" -> parseComandoLeitura();
-            case "WRITE" -> parseComandoEscrita();
-            case "BEGIN" -> {
-                noComando = parseComandoComposto();
+            case "READ" -> { return parseComandoLeitura(); }
+            case "WRITE" -> { return parseComandoEscrita(); }
+            case "BEGIN" -> { return parseComandoComposto(); }
+            case "IF" -> { return parseComandoIf(); }
+            case "WHILE" -> { return parseComandoWhile(); }
 
-            }
-            case "IF" -> parseComandoIf();
-            case "WHILE" -> parseComandoWhile();
+            default -> { return null; }
         }
-
-        return noComando;
-
     }
 
     private noArvoreDTO parseComandoComposto() {
@@ -355,35 +355,46 @@ public class Parser {
         return noComando;
     }
 
-    private void parseComandoWhile() {
+    private noArvoreDTO parseComandoWhile() {
 
+        return null;
     }
 
-    private void parseComandoIf() {
+    private noArvoreDTO parseComandoIf() {
 
 
+        return null;
     }
 
-    private void parseComandoAtribuicao() {
+    private noArvoreDTO parseComandoAtribuicao(String nomeVariavel) {
         try {
-            noArvoreDTO variavelEsquerda = new noArvoreDTO("Variável destino", "a");
+            noArvoreDTO variavelEsquerda = new noArvoreDTO("Variável", nomeVariavel);
             match("ATRIBUICAO"); // :=
 
             noArvoreDTO resultadoMatematica = expressao();
+
             noArvoreDTO noAtribuicao = new noArvoreDTO("Atribuicao", ":=");
             noAtribuicao.addFilhos(variavelEsquerda);
-            noAtribuicao.addFilhos(resultadoMatematica);
+
+            if (resultadoMatematica != null) {
+                noAtribuicao.addFilhos(resultadoMatematica);
+            }
+
+            return noAtribuicao;
         } catch (CompilerException.SyntaxException e) {
             sincronizar(FOLLOW_COMANDO);
         }
+        return null;
     }
 
-    private void parseComandoEscrita() {
+    private noArvoreDTO parseComandoEscrita() {
 
+        return null;
     }
 
-    private void parseComandoLeitura() {
+    private noArvoreDTO parseComandoLeitura() {
 
+        return null;
     }
 
     // <lista_comandos> ::= <comando> { ; <comando> }
