@@ -15,7 +15,7 @@ public class noArvoreDTO {
         this.filhos = new ArrayList<>();
     }
 
-    public void addFilhos(noArvoreDTO filho) {
+    public void addFilho(noArvoreDTO filho) {
         if(filho != null) {
             this.filhos.add(filho);
         }

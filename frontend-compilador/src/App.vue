@@ -21,7 +21,8 @@
   <div class="app-content">
 
     <div class="dashboard-col">
-      <div class="card card-clickable" :class="{ destaque: visaoAtiva === 'visao-editor' }" @click="mudarVisao('visao-editor')">
+      <div class="card card-clickable" :class="{ destaque: visaoAtiva === 'visao-editor' }"
+           @click="mudarVisao('visao-editor')">
         <div class="card-header">
           <div class="card-icon" style="background: #e28e83;">&lt;&gt;</div>
           Código-fonte
@@ -32,7 +33,8 @@
       <div class="section-title">Análise</div>
 
       <div class="row-cards">
-        <div class="card card-clickable" :class="{ destaque: visaoAtiva === 'visao-lexemas' }" @click="mudarVisao('visao-lexemas')">
+        <div class="card card-clickable" :class="{ destaque: visaoAtiva === 'visao-lexemas' }"
+             @click="mudarVisao('visao-lexemas')">
           <div class="card-header" style="font-size: 15px;">
             <div class="card-icon" style="background: #a390eb;">🏷️</div>
             Léxica
@@ -40,7 +42,8 @@
           <div class="card-number">{{ listaTokens.length }} <span class="card-label">tokens</span></div>
         </div>
 
-        <div class="card card-clickable" :class="{ destaque: visaoAtiva === 'visao-simbolos' }" @click="mudarVisao('visao-simbolos')">
+        <div class="card card-clickable" :class="{ destaque: visaoAtiva === 'visao-simbolos' }"
+             @click="mudarVisao('visao-simbolos')">
           <div class="card-header" style="font-size: 15px;">
             <div class="card-icon" style="background: #8aa9e8;">☰</div>
             Símbolos
@@ -49,7 +52,8 @@
         </div>
       </div>
 
-      <div class="card card-clickable" :class="{ destaque: visaoAtiva === 'visao-arvore' }" @click="mudarVisao('visao-arvore')">
+      <div class="card card-clickable" :class="{ destaque: visaoAtiva === 'visao-arvore' }"
+           @click="mudarVisao('visao-arvore')">
         <div class="card-header">
           <div class="card-icon" style="background: #a5d688;">🧩</div>
           Sintática (AST)
@@ -64,8 +68,20 @@
       <div class="toolbar">
         <div class="menu-actions">
           <span @click="novoArquivo">Novo</span>
-          <span>Abrir</span>
-          <span>Salvar</span>
+          <span @click="abrirArqiuvo">Abrir</span>
+
+          <input
+              type="file"
+              ref="inputArquivoEscondido"
+              @change="lerConteudoARquivo"
+              accept=".txt, .lalg, .pas"
+              style="display: none;"
+          />
+
+          <span @click="salvarARquivo">Salvar</span>
+
+
+
         </div>
         <button class="btn-compilar" @click="compilar">Compilar</button>
       </div>
@@ -73,7 +89,8 @@
       <div class="main-display-area">
 
         <div v-show="visaoAtiva === 'visao-editor'" style="display: flex; height: 100%;" class="editor-container">
-          <textarea id="codigo-fonte" v-model="codigoFonte" @input="atualizarLinhas" spellcheck="false" placeholder="Digite seu código LALG aqui..."></textarea>
+          <textarea id="codigo-fonte" v-model="codigoFonte" @input="atualizarLinhas" spellcheck="false"
+                    placeholder="Digite seu código LALG aqui..."></textarea>
         </div>
 
         <div v-show="visaoAtiva === 'visao-lexemas'" class="tabela-container">
@@ -105,34 +122,56 @@
           </table>
         </div>
 
-        <div v-show="visaoAtiva === 'visao-arvore'" style="height: 100%; border: 1px solid var(--borda); border-radius: 12px; overflow: hidden; background: white;">
+        <div v-show="visaoAtiva === 'visao-arvore'"
+             class="arvore-container"
+             :class="{ 'maximized-view': arvoreMaximizada }"
+             style="height: 100%; border: 1px solid var(--borda); border-radius: 12px; overflow: hidden; background: white;">
+
+          <button class="btn-floating-action" @click="arvoreMaximizada = !arvoreMaximizada">
+            {{ arvoreMaximizada ? '🗗 Restaurar' : '🗖 Maximizar Árvore' }}
+          </button>
+
           <VueFlow :nodes="nosDaArvore" :edges="linhasDaArvore">
-            <Background pattern-color="#aaa" gap="8" />
-            <Controls />
+            <Background pattern-color="#aaa" gap="8"/>
+            <Controls/>
           </VueFlow>
         </div>
 
       </div>
 
-      <div class="console-panel">
-        <div class="tabs">
-          <button class="tab" :class="{ active: abaAtiva === 'tab-erros' }" @click="mudarAba('tab-erros')">
-            Erros ({{ erros?.length || 0 }})
+      <div class="console-panel" :class="{ 'console-minimizado': !consoleAberto }">
+
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--borda);">
+          <div class="tabs" style="border-bottom: none;">
+            <button class="tab" :class="{ active: abaAtiva === 'tab-erros' }" @click="mudarAba('tab-erros')">
+              Erros ({{ erros?.length || 0 }})
+            </button>
+            <button class="tab" :class="{ active: abaAtiva === 'tab-logs' }" @click="mudarAba('tab-logs')">Logs</button>
+          </div>
+
+          <button @click="alternaConsole" class="btn-toggle-console" style="margin-right: 15px;">
+            {{ consoleAberto ? '▼ Esconder' : '▲ Mostrar' }}
           </button>
-          <button class="tab" :class="{ active: abaAtiva === 'tab-logs' }" @click="mudarAba('tab-logs')">Logs</button>
         </div>
 
-        <div v-show="abaAtiva === 'tab-erros'" class="tab-content active">
-          <div v-if="!erros || erros.length === 0" style="color: var(--texto-cinza); text-align: center; margin-top: 20px;">Nenhum erro encontrado.</div>
-          <div v-else>
-            <div v-for="(erro, index) in erros" :key="index" class="log-entry erro">{{ erro }}</div>
-          </div>
-        </div>
+        <div class="console-body" v-show="consoleAberto">
 
-        <div v-show="abaAtiva === 'tab-logs'" class="tab-content active">
-          <div v-for="(log, index) in logs" :key="index" class="log-entry" :class="{ sucesso: log.includes('sucesso'), erro: log.includes('fatal') }">
-            {{ log }}
+          <div v-show="abaAtiva === 'tab-erros'" class="tab-content active">
+            <div v-if="!erros || erros.length === 0"
+                 style="color: var(--texto-cinza); text-align: center; margin-top: 20px;">Nenhum erro encontrado.
+            </div>
+            <div v-else>
+              <div v-for="(erro, index) in erros" :key="index" class="log-entry erro">{{ erro }}</div>
+            </div>
           </div>
+
+          <div v-show="abaAtiva === 'tab-logs'" class="tab-content active">
+            <div v-for="(log, index) in logs" :key="index" class="log-entry"
+                 :class="{ sucesso: log.includes('sucesso'), erro: log.includes('fatal') }">
+              {{ log }}
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -141,15 +180,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { VueFlow } from '@vue-flow/core'
-import { Background } from '@vue-flow/background'
-import { Controls } from '@vue-flow/controls'
+import {ref, onMounted} from 'vue'
+import {VueFlow} from '@vue-flow/core'
+import {Background} from '@vue-flow/background'
+import {Controls} from '@vue-flow/controls'
 
 import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
 
-// === VARIÁVEIS DE ESTADO DA INTERFACE ===
 const codigoFonte = ref('program ola_mundo;\nint a, b, soma; \nbegin\n   a := 10;\n   b := 5;\n   soma := a + b;\nend.')
 const visaoAtiva = ref('visao-editor') // Controla a tela principal (editor, lexemas, arvore)
 const abaAtiva = ref('tab-logs')       // Controla o console inferior
@@ -157,14 +195,15 @@ const menuTemaAberto = ref(false)
 const temaAtual = ref('claro')
 const linhasDigitadas = ref(5)
 
-// === VARIÁVEIS DO COMPILADOR ===
 const erros = ref([])
 const logs = ref(['Aguardando compilação...'])
 const listaTokens = ref([])
 const nosDaArvore = ref([])
 const linhasDaArvore = ref([])
 const totalNos = ref(0)
-const edges = ref([])
+const consoleAberto = ref(true);
+const arvoreMaximizada = ref(false);
+const inputArquivoEscondido = ref(null);
 
 // === FUNÇÕES DA INTERFACE ===
 function mudarVisao(novaVisao) {
@@ -186,14 +225,76 @@ function atualizarLinhas() {
   linhasDigitadas.value = codigoFonte.value.split('\n').length
 }
 
-// === FUNÇÕES DE ARQUIVO (Simples) ===
-function novoArquivo() {
-  codigoFonte.value = ''
-  atualizarLinhas()
-  logs.value.push("Novo arquivo criado.")
+function alternaConsole() {
+  consoleAberto.value = !consoleAberto.value;
 }
 
-// === INTEGRAÇÃO COM O BACKEND (JAVA) ===
+// === funções de arqiuvos ===
+function abrirArqiuvo() {
+  inputArquivoEscondido.value.click();
+}
+
+function novoArquivo() {
+  if (confirm("Deseja apagar o código atual e criar um novo?")) {
+    codigoFonte.value = ''
+    atualizarLinhas()
+    nosDaArvore.value = []
+    linhasDaArvore.value = []
+    erros.value = []
+    logs.value = ["Novo arquivo criado."]
+  }
+}
+
+function lerConteudoARquivo(event) {
+  const arquivo = event.target.files[0];
+
+  if (!arquivo) return;
+
+  const leitor = new FileReader();
+
+  leitor.onload = (e) => {
+    codigoFonte.value = e.target.result;
+
+    erros.value = [];
+    logs.value = [`✅ Arquivo '${arquivo.name}' carregado com sucesso.`];
+    atualizarLinhas();
+  }
+
+  leitor.readAsText(arquivo);
+
+  event.target.value = '';
+}
+
+function salvarARquivo() {
+  if (!codigoFonte.value || codigoFonte.value.trim === '') {
+    alert("O editor está vazio. Não há nada para salvar.");
+    return;
+  }
+
+  const blob = new Blob([codigoFonte.value], { type: 'text/plain;charset=utf-8' });
+
+  const urlTemporaria = URL.createObjectURL(blob);
+
+  // link <a> invisível
+  const linkInvisivel = document.createElement('a');
+  linkInvisivel.href = urlTemporaria;
+
+  linkInvisivel.download = 'meu_programa.txt';
+
+  // pendura o link na página, clica nele e depois o destrói
+  document.body.appendChild(linkInvisivel);
+  linkInvisivel.click();
+  document.body.removeChild(linkInvisivel);
+
+  // libera a memória da URL temporária
+  URL.revokeObjectURL(urlTemporaria);
+
+  logs.value.push("💾 Arquivo salvo com sucesso!");
+}
+
+
+
+// === integração com o backend ===
 async function compilar() {
   logs.value.push("Iniciando compilação...")
   mudarAba('tab-logs')
@@ -201,8 +302,8 @@ async function compilar() {
   try {
     const resposta = await fetch('http://localhost:8080/api/compilar', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ codigo: codigoFonte.value })
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({codigo: codigoFonte.value})
     })
 
     if (!resposta.ok) {
@@ -239,28 +340,123 @@ function processarArvore(noRaiz) {
   let edges = []
   let idContador = 1
 
+  // contador global que avança sempre que desenha uma folha
+  // garante que uma folha nunca caia no mesmo espaço de outra
+  let posicaoFolhaX = 0;
+
+  function calcularPosicoes(no, nivelY) {
+    if (!no) return null;
+
+    let meuId = `node_${idContador++}`
+    let meuX = 0;
+
+    let ehTerminal = !no.filhos || no.filhos.length === 0;
+
+    if (ehTerminal) {
+      meuX = posicaoFolhaX; // se for folha, ganha a próxima posição X livre na tela
+      posicaoFolhaX += 1;
+    } else {
+      let somaPosicaoFilhos = 0;
+      let totalFilhosValidos = 0;
+
+      no.filhos.forEach((filho) => {
+        let infoFilho = calcularPosicoes(filho, nivelY + 1);
+        if (infoFilho) {
+          somaPosicaoFilhos += infoFilho.x;
+          totalFilhosValidos++;
+
+          edges.push({
+            id: `e_${meuId}-${infoFilho.id}`,
+            source: meuId,
+            target: infoFilho.id,
+            type: 'smoothstep',
+            style: {strokeWidth: 2, stroke: '#000'}
+          });
+        }
+      });
+
+      if (totalFilhosValidos > 0) {
+        meuX = somaPosicaoFilhos / totalFilhosValidos;
+      } else {
+        meuX = posicaoFolhaX;
+        posicaoFolhaX += 1;
+      }
+    }
+    nodes.push({
+      id: meuId,
+      // multiplica por um valor fixo em pixels para dar o espaçamento final
+      position: {x: meuX * 180, y: nivelY * 120},
+      data: {label: ehTerminal ? (no.valor || no.nome) : `<${no.nome}>`},
+      style: ehTerminal
+          ? {
+            backgroundColor: '#fef08a',
+            color: '#854d0e',
+            fontWeight: 'bold',
+            borderRadius: '30px',
+            border: '2px solid #eab308',
+            padding: '10px 20px',
+            textAlign: 'center'
+          }
+          : {
+            backgroundColor: '#c084fc',
+            color: 'white',
+            fontWeight: 'bold',
+            borderRadius: '8px',
+            border: '2px solid #9333ea',
+            padding: '10px 20px',
+            textAlign: 'center'
+          }
+    });
+
+    return {id: meuId, x: meuX};
+
+  }
+
   function percorrer(no, idDoPai, nivelX, nivelY) {
     if (!no) return;
     let meuId = `node_${idContador++}`
 
-    nodes.push({
-      data: {label: no.valor ? `${no.nome}\n(${no.valor})` : no.nome},
-      id: meuId,
+    let ehTerminal = !no.filhos || no.filhos.length === 0;
 
+    nodes.push({
+      id: meuId,
       position: {x: nivelX * 200, y: nivelY * 120},
-      style: {backgroundColor: '#a76a2f', color: 'black', fontWeight: 'bold', borderRadius: '8px'}
+      data: {
+        // Se for folha, mostra o texto real (ex: 'a', ':=', '10')
+        // Se for ramificação, mostra o nome da regra (ex: '<Atribuição>')
+        label: ehTerminal ? (no.valor || no.nome) : `<${no.nome}>`
+      },
+      style: ehTerminal
+          // Estilo dos terminais
+          ? {
+            backgroundColor: '#3a4938',
+            color: '#f81b1b',
+            fontWeight: 'bold',
+            borderRadius: '30px',
+            border: '2px solid #eab308',
+            padding: '10px 20px'
+          }
+          // Estilo dos não-terminais
+          : {
+            backgroundColor: '#a38ec2',
+            color: 'white',
+            fontWeight: 'bold',
+            borderRadius: '8px',
+            border: '2px solid #9333ea',
+            padding: '10px 20px'
+          }
     })
 
     if (idDoPai) {
       edges.push({
         id: `e_${idDoPai}-${meuId}`,
-            source: idDoPai,
-            target: meuId,
-            type: 'smoothstep',
-            animated: true,
-            style: { strokeWidth: 3, stroke: '#000' },
+        source: idDoPai,
+        target: meuId,
+        type: 'smoothstep',
+        animated: true,
+        style: {strokeWidth: 2, stroke: '#000'},
       })
-  }
+    }
 
     if (no.filhos && no.filhos.length > 0) {
 
@@ -273,7 +469,8 @@ function processarArvore(noRaiz) {
     }
   }
 
-  percorrer(noRaiz, null, 0, 0)
+  //percorrer(noRaiz, null, 0, 0)
+  calcularPosicoes(noRaiz, 0);
   nosDaArvore.value = nodes
   linhasDaArvore.value = edges
   totalNos.value = nodes.length
@@ -309,6 +506,7 @@ onMounted(() => {
   --cor-primaria-hover: #e88d80;
   --texto-escuro: #4a3f3f;
   --texto-cinza: #8c8282;
+  --texto-principal: #1e293b;
   --borda: #f0e6e5;
   --erro-bg: #ffe6e6;
   --erro-texto: #d32f2f;
@@ -326,6 +524,7 @@ onMounted(() => {
   --cor-primaria-hover: #1177bb;
   --texto-escuro: #d4d4d4;
   --texto-cinza: #858585;
+  --texto-principal: #f8fafc;
   --borda: #3e3e42;
   /*--erro-bg: #5a1d1d;*/
   /*--erro-texto: #f48771;*/
@@ -347,6 +546,7 @@ onMounted(() => {
   --cor-primaria-hover: #ff79c6;
   --texto-escuro: #f8f8f2;
   --texto-cinza: #6272a4;
+  --texto-principal: #f8fafc;
   --borda: #21222c;
   /*--erro-bg: #ff555540;*/
   /*--erro-texto: #ff5555;*/
@@ -627,6 +827,33 @@ button {
   flex-direction: column;
 }
 
+.btn-toggle-console {
+  background: transparent;
+  border: 1px solid #ccc;
+  color: #555;
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.btn-toggle-console:hover {
+  background: #e2e8f0;
+}
+
+/* quando o console está minimizado, ele fica só com a barra do título */
+.console-minimizado {
+  height: 40px !important; /* altura apenas para caber o botão e o título */
+  overflow: hidden;
+}
+
+
+.main-display-area {
+  flex-grow: 1;
+  overflow: hidden; /* evita que a árvore vaze se crescer demais */
+}
+
 .tabs {
   display: flex;
   border-bottom: 1px solid var(--borda);
@@ -813,4 +1040,49 @@ th {
     transform: translateX(0);
   }
 }
+
+/* Container padrão da árvore */
+.arvore-container {
+  position: relative;
+  height: 100%;
+  border: 1px solid var(--borda);
+  border-radius: 12px;
+  overflow: hidden;
+  background: white;
+  transition: all 0.3s ease;
+}
+
+/* estado maximizado */
+.arvore-container.maximized-view {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999; /* Fica acima de tudo (sidebar, toolbar, console) */
+  border-radius: 0;
+}
+
+/* Botão flutuante dentro da árvore */
+.btn-floating-action {
+  position: absolute;
+  top: 15px;
+  right: 60px; /* Posicionado para não colidir com a barra lateral */
+  z-index: 100;
+  padding: 8px 16px;
+  background: white;
+  border: 1px solid var(--borda);
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  font-weight: bold;
+  color: var(--texto-principal);
+}
+
+.btn-floating-action:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+
 </style>

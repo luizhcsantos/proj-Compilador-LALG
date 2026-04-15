@@ -184,17 +184,17 @@ public class Parser {
         match("IDENTIFICADOR");
         match("PONTOVIRGULA");
 
-        raizArvore = new noArvoreDTO("<programa>", nomePrograma);
+        raizArvore = new noArvoreDTO("programa", nomePrograma);
 
         noArvoreDTO noBloco = parseBloco();
-        if (noBloco != null) { raizArvore.addFilhos(noBloco); }
+        if (noBloco != null) { raizArvore.addFilho(noBloco); }
 
         match("PONTO");
     }
 
     private noArvoreDTO parseBloco() {
 
-        noArvoreDTO bloco = new noArvoreDTO("<bloco>", "");
+        noArvoreDTO bloco = new noArvoreDTO("bloco", "");
 
         if (FIRST_DECL_VAR.contains(tokenAtual.getToken())) {
             parseParteDeclaracaoVariaveis();
@@ -206,7 +206,7 @@ public class Parser {
 
         noArvoreDTO noComandos = parseComandoComposto();
         if (noComandos != null) {
-            bloco.addFilhos(noComandos);
+            bloco.addFilho(noComandos);
         }
 
         return bloco;
@@ -299,7 +299,7 @@ public class Parser {
     // <comando> ::= <comando_atribuicao> | <comando_leitura> | <comando_escrita>
     public noArvoreDTO parseComando() {
 
-        noArvoreDTO noComando = new noArvoreDTO("<comando>", "");
+        noArvoreDTO noComando = new noArvoreDTO("comando", "");
 
         //
         if (!FIRST_COMANDO.contains(tokenAtual.getToken())) {
@@ -328,10 +328,10 @@ public class Parser {
                     match("FECHAPAR");
 
                     // Retorna um nó de Chamada de Procedimento (no futuro os parâmetros serão "pendurados" nele)
-                    return new noArvoreDTO("<chamada procedimento>", nomeVariavelOuProcedimento);
+                    return new noArvoreDTO("chamada procedimento", nomeVariavelOuProcedimento);
                 } else {
                     // Se não for := nem (, é uma chamada de procedimento sem parâmetros
-                    return new noArvoreDTO("<chamada procedimento>", nomeVariavelOuProcedimento);
+                    return new noArvoreDTO("chamada procedimento", nomeVariavelOuProcedimento);
                 }
             }
             case "READ" -> { return parseComandoLeitura(); }
@@ -367,24 +367,25 @@ public class Parser {
     }
 
     private noArvoreDTO parseComandoAtribuicao(String nomeVariavel) {
-        try {
-            noArvoreDTO variavelEsquerda = new noArvoreDTO("<variável>", nomeVariavel);
-            match("ATRIBUICAO"); // :=
+        // nó pai
+        noArvoreDTO noAtribuicao = new noArvoreDTO("Atribuição", "");
 
-            noArvoreDTO resultadoMatematica = expressao();
+        // filho esquerdo
+        noArvoreDTO terminalVar = new noArvoreDTO("Variável", nomeVariavel);
+        noAtribuicao.addFilho(terminalVar);
 
-            noArvoreDTO noAtribuicao = new noArvoreDTO("<atribuicao>", ":=");
-            noAtribuicao.addFilhos(variavelEsquerda);
+        // filho central
+        match("ATRIBUICAO");
+        noArvoreDTO terminalSinal = new noArvoreDTO("Símbolo", ":=");
+        noAtribuicao.addFilho(terminalSinal);
 
-            if (resultadoMatematica != null) {
-                noAtribuicao.addFilhos(resultadoMatematica);
-            }
-
-            return noAtribuicao;
-        } catch (CompilerException.SyntaxException e) {
-            sincronizar(FOLLOW_COMANDO);
+        // filho direito
+        noArvoreDTO resultadoMatematica = expressao();
+        if (resultadoMatematica != null) {
+            noAtribuicao.addFilho(resultadoMatematica);
         }
-        return null;
+
+        return noAtribuicao;
     }
 
     private noArvoreDTO parseComandoEscrita() {
@@ -400,10 +401,10 @@ public class Parser {
     // <lista_comandos> ::= <comando> { ; <comando> }
     public noArvoreDTO parseListaComandos() {
 
-        noArvoreDTO lista = new noArvoreDTO("<lista de comandos>", "");
+        noArvoreDTO lista = new noArvoreDTO("lista de comandos", "");
 
         noArvoreDTO cmd = parseComando();
-        if (cmd != null) { lista.addFilhos(cmd); }
+        if (cmd != null) { lista.addFilho(cmd); }
 
 //        try {
 
@@ -413,7 +414,7 @@ public class Parser {
             if (tokenAtual.getToken().equals("END")) break;
 
             noArvoreDTO proximoCmd = parseComando();
-            if (proximoCmd != null) { lista.addFilhos(proximoCmd); }
+            if (proximoCmd != null) { lista.addFilho(proximoCmd); }
 //            }
 //        } catch (RuntimeException e) {
             // anota o erro (no futuro, pode adicionar numa lista de erros sintáticos)
@@ -439,14 +440,20 @@ public class Parser {
             }
             noArvoreDTO noEsquerda = termo();
             while (tokenAtual.getToken().equals("OPSOMA")) {
-                String operador = tokenAtual.getLexema();
+                String operador = tokenAtual.getLexema(); // o sinal de +
                 match("OPSOMA");
 
                 noArvoreDTO noDireita = termo();
 
-                noArvoreDTO noPai = new noArvoreDTO("<soma>", operador);
-                noPai.addFilhos(noEsquerda);
-                noPai.addFilhos(noDireita);
+                noArvoreDTO noPai = new noArvoreDTO("Expressão", "");
+
+                // "pendura" a matemática na ordem exata: esquerda, meio(+), direita
+                noPai.addFilho(noEsquerda);
+
+                noArvoreDTO terminalOperador = new noArvoreDTO("Operador", operador);
+                noPai.addFilho(terminalOperador);
+
+                noPai.addFilho(noDireita);
 
                 noEsquerda = noPai;
             }
@@ -457,11 +464,11 @@ public class Parser {
         public noArvoreDTO termo () {
             // Mock rápido: Lê apenas identificadores ou números
             if (tokenAtual.getToken().equals("IDENTIFICADOR")) {
-                noArvoreDTO no = new noArvoreDTO("<variável>", tokenAtual.getLexema());
+                noArvoreDTO no = new noArvoreDTO("variável", tokenAtual.getLexema());
                 match("IDENTIFICADOR");
                 return no;
             } else if (tokenAtual.getToken().equals("NUM")) {
-                noArvoreDTO no = new noArvoreDTO("<num>", tokenAtual.getLexema());
+                noArvoreDTO no = new noArvoreDTO("num", tokenAtual.getLexema());
                 match("NUM");
                 return no;
             }
