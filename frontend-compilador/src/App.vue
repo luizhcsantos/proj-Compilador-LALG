@@ -229,7 +229,7 @@ function alternaConsole() {
   consoleAberto.value = !consoleAberto.value;
 }
 
-// === funções de arqiuvos ===
+// funções de arqiuvos
 function abrirArqiuvo() {
   inputArquivoEscondido.value.click();
 }
@@ -294,7 +294,7 @@ function salvarARquivo() {
 
 
 
-// === integração com o backend ===
+// integração com o backend
 async function compilar() {
   logs.value.push("Iniciando compilação...")
   mudarAba('tab-logs')

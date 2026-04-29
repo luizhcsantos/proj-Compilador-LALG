@@ -53,23 +53,6 @@ public class CompiladorController {
             response.setSucesso(true);
             response.setMensagem("Análise concluída com sucesso!");
 
-            // MOCK TEMPORÁRIO PARA VER A ÁRVORE NO VUE.JS
-            // aqui entrará o código real da árvore gerada
-//            br.unesp.compilerLALG.core.parser.ast.noArvoreDTO folhaEsq =
-//                    new br.unesp.compilerLALG.core.parser.ast.noArvoreDTO("Variável", "a");
-//
-//            br.unesp.compilerLALG.core.parser.ast.noArvoreDTO folhaDir =
-//                    new br.unesp.compilerLALG.core.parser.ast.noArvoreDTO("Número", "10");
-//
-//            br.unesp.compilerLALG.core.parser.ast.noArvoreDTO raiz =
-//                    new br.unesp.compilerLALG.core.parser.ast.noArvoreDTO("Atribuição", ":=");
-//
-//            // Adiciona as folhas na raiz
-//            raiz.addFilhos(folhaEsq);
-//            raiz.addFilhos(folhaDir);
-//
-//            // Agora o Java aceita sem reclamar!
-//            response.setArvoreSintatica(raiz);
             response.setArvoreSintatica(parser.getRaizArvore());
         }
 

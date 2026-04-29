@@ -187,7 +187,9 @@ public class Parser {
         raizArvore = new noArvoreDTO("programa", nomePrograma);
 
         noArvoreDTO noBloco = parseBloco();
-        if (noBloco != null) { raizArvore.addFilho(noBloco); }
+        if (noBloco != null) {
+            raizArvore.addFilho(noBloco);
+        }
 
         match("PONTO");
     }
@@ -311,7 +313,7 @@ public class Parser {
                     tokenAtual.getColunaInicial()
             ));
             sincronizar(FOLLOW_COMANDO);
-            return noComando; // Sai do metodo para evitar cascata de erros
+            return noComando; // sai do metodo para evitar cascata de erros
         }
 
         switch (tokenAtual.getToken()) {
@@ -334,24 +336,38 @@ public class Parser {
                     return new noArvoreDTO("chamada procedimento", nomeVariavelOuProcedimento);
                 }
             }
-            case "READ" -> { return parseComandoLeitura(); }
-            case "WRITE" -> { return parseComandoEscrita(); }
-            case "BEGIN" -> { return parseComandoComposto(); }
-            case "IF" -> { return parseComandoIf(); }
-            case "WHILE" -> { return parseComandoWhile(); }
+            case "READ" -> {
+                return parseComandoLeitura();
+            }
+            case "WRITE" -> {
+                return parseComandoEscrita();
+            }
+            case "BEGIN" -> {
+                return parseComandoComposto();
+            }
+            case "IF" -> {
+                return parseComandoIf();
+            }
+            case "WHILE" -> {
+                return parseComandoWhile();
+            }
 
-            default -> { return null; }
+            default -> {
+                return null;
+            }
         }
     }
 
     private noArvoreDTO parseComandoComposto() {
 
-        noArvoreDTO noComando = new noArvoreDTO("<comando composto>", "");
-
+        noArvoreDTO noComando = new noArvoreDTO("Composto", "");
         match("BEGIN");
-        noComando = parseListaComandos();
-        match("END");
 
+        noArvoreDTO lista = parseListaComandos();
+        if (lista != null) {
+            noComando.addFilho(lista);
+        }
+        match("END");
         return noComando;
     }
 
@@ -404,9 +420,10 @@ public class Parser {
         noArvoreDTO lista = new noArvoreDTO("lista de comandos", "");
 
         noArvoreDTO cmd = parseComando();
-        if (cmd != null) { lista.addFilho(cmd); }
+        if (cmd != null) {
+            lista.addFilho(cmd);
+        }
 
-//        try {
 
         while (tokenAtual.getToken().equals("PONTOVIRGULA")) {
             match("PONTOVIRGULA");
@@ -414,86 +431,83 @@ public class Parser {
             if (tokenAtual.getToken().equals("END")) break;
 
             noArvoreDTO proximoCmd = parseComando();
-            if (proximoCmd != null) { lista.addFilho(proximoCmd); }
-//            }
-//        } catch (RuntimeException e) {
-            // anota o erro (no futuro, pode adicionar numa lista de erros sintáticos)
-//            System.err.println(e.getMessage());
+            if (proximoCmd != null) {
+                lista.addFilho(proximoCmd);
+            }
 
-            // aciona o Panic Mode para pular até o fim do comando problemático
 //            sincronizar(FOLLOW_COMANDO);
         }
         return lista;
-        }
+    }
 
-        private noArvoreDTO expressao () {
-            if (!FIRST_EXPRESSAO.contains(tokenAtual.getToken())) {
-                listaErrosSintaticos.add(new CompilerException.TokenInesperadoException(
-                        "Inicio de expressão válido (Numero,variável ou parenteses)",
-                        tokenAtual.getToken(),
-                        tokenAtual.getLexema(),
-                        tokenAtual.getLinha(),
-                        tokenAtual.getColunaInicial()
-                ));
-                sincronizar(FOLLOW_EXPRESSAO);
-                return null;
-            }
-            noArvoreDTO noEsquerda = termo();
-            while (tokenAtual.getToken().equals("OPSOMA")) {
-                String operador = tokenAtual.getLexema(); // o sinal de +
-                match("OPSOMA");
-
-                noArvoreDTO noDireita = termo();
-
-                noArvoreDTO noPai = new noArvoreDTO("Expressão", "");
-
-                // "pendura" a matemática na ordem exata: esquerda, meio(+), direita
-                noPai.addFilho(noEsquerda);
-
-                noArvoreDTO terminalOperador = new noArvoreDTO("Operador", operador);
-                noPai.addFilho(terminalOperador);
-
-                noPai.addFilho(noDireita);
-
-                noEsquerda = noPai;
-            }
-
-            return noEsquerda;
-        }
-
-        public noArvoreDTO termo () {
-            // Mock rápido: Lê apenas identificadores ou números
-            if (tokenAtual.getToken().equals("IDENTIFICADOR")) {
-                noArvoreDTO no = new noArvoreDTO("variável", tokenAtual.getLexema());
-                match("IDENTIFICADOR");
-                return no;
-            } else if (tokenAtual.getToken().equals("NUM")) {
-                noArvoreDTO no = new noArvoreDTO("num", tokenAtual.getLexema());
-                match("NUM");
-                return no;
-            }
-
-            // Se cair aqui, era algo inválido no meio da conta
+    private noArvoreDTO expressao() {
+        if (!FIRST_EXPRESSAO.contains(tokenAtual.getToken())) {
             listaErrosSintaticos.add(new CompilerException.TokenInesperadoException(
-                    "Tipo esperado: IDENTIFICADOR ou NUM",
+                    "Inicio de expressão válido (Numero,variável ou parenteses)",
                     tokenAtual.getToken(),
                     tokenAtual.getLexema(),
                     tokenAtual.getLinha(),
-                    tokenAtual.getColunaInicial()));
+                    tokenAtual.getColunaInicial()
+            ));
             sincronizar(FOLLOW_EXPRESSAO);
             return null;
         }
+        noArvoreDTO noEsquerda = termo();
+        while (tokenAtual.getToken().equals("OPSOMA")) {
+            String operador = tokenAtual.getLexema(); // o sinal de +
+            match("OPSOMA");
 
+            noArvoreDTO noDireita = termo();
 
-        public List<CompilerException.SyntaxException> getErros () {
-            return listaErrosSintaticos;
+            noArvoreDTO noPai = new noArvoreDTO("Expressão", "");
+
+            // "pendura" a matemática na ordem exata: esquerda, meio(+), direita
+            noPai.addFilho(noEsquerda);
+
+            noArvoreDTO terminalOperador = new noArvoreDTO("Operador", operador);
+            noPai.addFilho(terminalOperador);
+
+            noPai.addFilho(noDireita);
+
+            noEsquerda = noPai;
         }
 
-        public boolean temErros () {
-            return !listaErrosSintaticos.isEmpty();
-        }
-
-        public noArvoreDTO getRaizArvore () {
-            return raizArvore;
-        }
+        return noEsquerda;
     }
+
+    public noArvoreDTO termo() {
+        // Mock rápido: Lê apenas identificadores ou números
+        if (tokenAtual.getToken().equals("IDENTIFICADOR")) {
+            noArvoreDTO no = new noArvoreDTO("variável", tokenAtual.getLexema());
+            match("IDENTIFICADOR");
+            return no;
+        } else if (tokenAtual.getToken().equals("NUM")) {
+            noArvoreDTO no = new noArvoreDTO("num", tokenAtual.getLexema());
+            match("NUM");
+            return no;
+        }
+
+        // Se cair aqui, era algo inválido no meio da conta
+        listaErrosSintaticos.add(new CompilerException.TokenInesperadoException(
+                "Tipo esperado: IDENTIFICADOR ou NUM",
+                tokenAtual.getToken(),
+                tokenAtual.getLexema(),
+                tokenAtual.getLinha(),
+                tokenAtual.getColunaInicial()));
+        sincronizar(FOLLOW_EXPRESSAO);
+        return null;
+    }
+
+
+    public List<CompilerException.SyntaxException> getErros() {
+        return listaErrosSintaticos;
+    }
+
+    public boolean temErros() {
+        return !listaErrosSintaticos.isEmpty();
+    }
+
+    public noArvoreDTO getRaizArvore() {
+        return raizArvore;
+    }
+}
