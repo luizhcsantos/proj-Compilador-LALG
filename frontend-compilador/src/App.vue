@@ -320,7 +320,7 @@ async function compilar() {
       logs.value.push("✅ Análise léxica concluída com sucesso!")
       mudarVisao('visao-lexemas')
       processarArvore(dados.arvoreSintatica)
-      mudarVisao('visao-arvore')  // Abre a aba da arvore automaticamente
+      // mudarVisao('visao-arvore')  // Abre a aba da arvore automaticamente
     } else {
       erros.value = dados.erros || []
       logs.value.push("❌ Erros encontrados durante a compilação.")

@@ -18,6 +18,13 @@ public class Parser {
     private int pos = 0;
     private noArvoreDTO raizArvore;
 
+    /* TODO
+        1. Expressões Relacionais (<, >, <=, >=, =, <>) e Lógicas (and, or, not) -- feito
+        2. Comandos de ControlE (IF e WHILE) -- if feito, while necessita de atenção
+        3. Comandos de Entrada/Saída (READ e WRITE)
+        4. Procedimentos
+        */
+
     // Lista para guardar os erros sintáticos (Panic Mode)
     private final List<CompilerException.SyntaxException> listaErrosSintaticos = new ArrayList<>();
 
@@ -357,15 +364,59 @@ public class Parser {
         return noComando;
     }
 
+    // <comando repetitivo 1> ::= while <expressão> do <comando>
     private noArvoreDTO parseComandoWhile() {
 
-        return null;
+        noArvoreDTO noWhile = new noArvoreDTO("Comando repetitivo 1", "while");
+
+        match("WHILE");
+
+        noArvoreDTO noCondicao = new noArvoreDTO("Condição", "");
+        noArvoreDTO expCondicao = expressao();
+        if  (expCondicao != null) { noCondicao.addFilho(expCondicao); }
+        noWhile.addFilho(noCondicao);
+
+        match("DO");
+        noArvoreDTO noCorpo = new noArvoreDTO("Corpo do while (do)", "");
+        noArvoreDTO cmdCorpo = parseComando();
+        if (cmdCorpo != null) { noCorpo.addFilho(cmdCorpo); }
+        noWhile.addFilho(noCorpo);
+
+        return noWhile;
     }
 
+    // <comando condicional1> ::= if <expressão> then <comando> [ else <comando> ]
     private noArvoreDTO parseComandoIf() {
 
+        noArvoreDTO noIf = new noArvoreDTO("Comando condicional 1", "if");
 
-        return null;
+        match("IF");
+
+        // condição
+        noArvoreDTO noCondicao = new noArvoreDTO("Condição", "");
+        noArvoreDTO expCondicao = expressao();
+        if (expCondicao != null) { noCondicao.addFilho(expCondicao); }
+        noIf.addFilho(noCondicao);
+
+        match("THEN");
+
+        // verdadeiro
+        noArvoreDTO noVerdadeiro =  new noArvoreDTO("Verdadeiro (then)", "");
+        noArvoreDTO cmdVerdadeiro = parseComando();
+        if (cmdVerdadeiro != null) { noVerdadeiro.addFilho(cmdVerdadeiro); }
+        noIf.addFilho(noVerdadeiro);
+
+        // else (opcional)
+        if (tokenAtual.getToken().equals("ELSE")) {
+            match("ELSE");
+
+            noArvoreDTO noFalso = new noArvoreDTO("Falso (else)", "");
+            noArvoreDTO cmdFalso = parseComando();
+            if (cmdFalso != null) { noFalso.addFilho(cmdFalso); }
+            noIf.addFilho(noFalso);
+        }
+
+        return noIf;
     }
 
     private noArvoreDTO parseComandoAtribuicao(String nomeVariavel) {
@@ -426,7 +477,7 @@ public class Parser {
         return lista;
     }
 
-    private noArvoreDTO expressao() {
+    private noArvoreDTO expressaoSimples() {
         if (!FIRST_EXPRESSAO.contains(tokenAtual.getToken())) {
             listaErrosSintaticos.add(new CompilerException.TokenInesperadoException(
                     "Inicio de expressão válido (Numero,variável ou parenteses)",
@@ -449,7 +500,7 @@ public class Parser {
 
             noArvoreDTO noDireita = termo();
 
-            noArvoreDTO noPai = new noArvoreDTO("Expressão", operador);
+            noArvoreDTO noPai = new noArvoreDTO("Expressão simples", operador);
 
             // "pendura" a matemática na ordem exata: esquerda, meio(+), direita
             noPai.addFilho(noEsquerda);
@@ -462,6 +513,38 @@ public class Parser {
             noEsquerda = noPai;
         }
 
+        return noEsquerda;
+    }
+
+    public noArvoreDTO expressao() {
+        noArvoreDTO noEsquerda = expressaoSimples();
+
+        if (FIRST_RELACAO.contains(tokenAtual.getToken())) {
+
+            String operadorRelacional = tokenAtual.getLexema();
+            String tokenDoOperador = tokenAtual.getToken();
+
+            // consome o sinal
+            match(tokenDoOperador);
+
+            noArvoreDTO noDireita = expressaoSimples();
+
+
+            noArvoreDTO noRelacao = new noArvoreDTO("Expressão relacional", operadorRelacional);
+
+            if (noEsquerda != null) {
+                noRelacao.addFilho(noEsquerda);
+            }
+
+            noArvoreDTO terminalOperador = new noArvoreDTO("Operador Relacional", operadorRelacional);
+            noRelacao.addFilho(terminalOperador);
+
+            if (noDireita != null) {
+                noRelacao.addFilho(noDireita);
+            }
+
+            return noRelacao;
+        }
         return noEsquerda;
     }
 
@@ -498,7 +581,7 @@ public class Parser {
 
                 if (tokenAtual.getToken().equals("ABRECOLCHETE")) {
                     match("ABRECOLCHETE");
-                    noArvoreDTO indiceVetor = expressao();
+                    noArvoreDTO indiceVetor = expressaoSimples();
                     match("FECHACOLCHETE");
 
                     noArvoreDTO noVEtor = new noArvoreDTO("Vetor", nomeIdentificador);
@@ -525,7 +608,7 @@ public class Parser {
             case "ABREPAR" -> {
                 match("ABREPAR");
 
-                noArvoreDTO noExpressaoInterna = expressao();
+                noArvoreDTO noExpressaoInterna = expressaoSimples();
                 match("FECHAPAR");
                 return noExpressaoInterna;
             }
@@ -534,9 +617,11 @@ public class Parser {
 
                 noArvoreDTO noFatorNEgado = fator();
                 noArvoreDTO noNot = new noArvoreDTO("Operador Unário", "not");
-                if (noFatorNEgado != null) { noNot.addFilho(noFatorNEgado); }
+                if (noFatorNEgado != null) {
+                    noNot.addFilho(noFatorNEgado);
+                }
                 return noNot;
-}
+            }
             default -> {
                 listaErrosSintaticos.add(new CompilerException.TokenInesperadoException(
                         "Início de fator válido (Identificador, Número, '(', 'not', 'true', 'false')",
