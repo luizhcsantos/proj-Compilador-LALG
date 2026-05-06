@@ -97,7 +97,7 @@ public class Lexer {
                 if (matcher.find()) {
                     String lexema = matcher.group();
 
-                    if (tipo.name().equals("IDENTIFICADOR") && lexema.length() > 10) {
+                    if (tipo.name().equals("IDENTIFICADOR") && lexema.length() > 15) {
                         throw new CompilerException.LimiteExcedidoException(
                                 "identificador", lexema, 10, linha, coluna);
                     }

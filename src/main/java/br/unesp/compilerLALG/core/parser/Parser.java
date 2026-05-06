@@ -443,12 +443,53 @@ public class Parser {
 
     private noArvoreDTO parseComandoEscrita() {
 
-        return null;
+        noArvoreDTO noWrite = new noArvoreDTO("Comando", "WRITE");
+        match("WRITE");   // <-- SE ESTA LINHA NÃO RODAR, O COMPILADOR TRAVA!
+        match("ABREPAR");
+
+        noArvoreDTO expressaoImpressa = expressao();
+        if (expressaoImpressa != null) {
+            noWrite.addFilho(expressaoImpressa);
+        }
+
+        while (tokenAtual.getToken().equals("VIRGULA")) {
+            match("VIRGULA");
+            noArvoreDTO proximaExpressao = expressao();
+            if (proximaExpressao != null) {
+                noWrite.addFilho(proximaExpressao);
+            }
+        }
+
+        match("FECHAPAR");
+        return noWrite;
     }
 
     private noArvoreDTO parseComandoLeitura() {
 
-        return null;
+        noArvoreDTO noRead = new noArvoreDTO("Comando", "READ");
+        match("READ");    // <-- A MESMA COISA AQUI!
+        match("ABREPAR");
+
+        if (tokenAtual.getToken().equals("IDENTIFICADOR")) {
+            noRead.addFilho(new noArvoreDTO("Variável Lida", tokenAtual.getLexema()));
+            match("IDENTIFICADOR");
+        } else {
+            listaErrosSintaticos.add(new CompilerException.TokenInesperadoException(
+                    "IDENTIFICADOR", tokenAtual.getToken(), tokenAtual.getLexema(),
+                    tokenAtual.getLinha(), tokenAtual.getColunaInicial()
+            ));
+        }
+
+        while (tokenAtual.getToken().equals("VIRGULA")) {
+            match("VIRGULA");
+            if (tokenAtual.getToken().equals("IDENTIFICADOR")) {
+                noRead.addFilho(new noArvoreDTO("Variável Lida", tokenAtual.getLexema()));
+                match("IDENTIFICADOR");
+            }
+        }
+
+        match("FECHAPAR");
+        return noRead;
     }
 
     // <lista_comandos> ::= <comando> { ; <comando> }
