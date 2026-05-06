@@ -106,20 +106,6 @@ public class Parser {
     );
 
 
-
-    /* TODO:
-        - Crie Listas de Strings (ou Set<String>) no topo da classe Parser
-            contendo os conjuntos First e Follow mais importantes.
-        - Sempre que o símbolo na EBNF for |, use um switch com os Firsts.
-        - Sempre que o símbolo for [ ] (Opcional), use um if com os Firsts.
-        - Sempre que houver um catch de erro, use um while de sincronização usando os Follows.
-        - Corrija o ABREPAR e FECHAPAR no fator() para evitar bugs na matemática.
-        - Adicione o metodo sincronizar() e comece a colocar blocos try-catch chamando ele dentro de blocos maiores.
-        - Preencha os métodos vazios (parseDeclaracoesVariaveis, parseComandoIf, parseComandoWhile)
-            traduzindo linha a linha da sua EBNF usando o match() e o avancar().
-        -
-     */
-
     public Parser(List<Token> tokens) {
         this.tokens = tokens;
         this.posicaoAtual = 0;
@@ -453,13 +439,17 @@ public class Parser {
             return null;
         }
         noArvoreDTO noEsquerda = termo();
-        while (tokenAtual.getToken().equals("OPSOMA")) {
-            String operador = tokenAtual.getLexema(); // o sinal de +
-            match("OPSOMA");
+        while (tokenAtual.getToken().equals("OPSOMA") ||
+                tokenAtual.getToken().equals("OPSUB") ||
+                tokenAtual.getToken().equals("OPOR")) {
+
+            String operador = tokenAtual.getLexema();
+            String tokenDoOperador = tokenAtual.getToken();// o sinal de +
+            match(tokenDoOperador); // consome +, - ou or
 
             noArvoreDTO noDireita = termo();
 
-            noArvoreDTO noPai = new noArvoreDTO("Expressão", "");
+            noArvoreDTO noPai = new noArvoreDTO("Expressão", operador);
 
             // "pendura" a matemática na ordem exata: esquerda, meio(+), direita
             noPai.addFilho(noEsquerda);
@@ -476,26 +466,92 @@ public class Parser {
     }
 
     public noArvoreDTO termo() {
-        // Mock rápido: Lê apenas identificadores ou números
-        if (tokenAtual.getToken().equals("IDENTIFICADOR")) {
-            noArvoreDTO no = new noArvoreDTO("variável", tokenAtual.getLexema());
-            match("IDENTIFICADOR");
-            return no;
-        } else if (tokenAtual.getToken().equals("NUM")) {
-            noArvoreDTO no = new noArvoreDTO("num", tokenAtual.getLexema());
-            match("NUM");
-            return no;
+        noArvoreDTO noEsquerda = fator();
+
+        while (tokenAtual.getToken().equals("OPMUL") ||
+                tokenAtual.getToken().equals("OPDIV") ||
+                tokenAtual.getToken().equals("OPAND")) {
+
+            String operador = tokenAtual.getLexema();
+            String tokenDoOperador = tokenAtual.getToken();
+            match(tokenDoOperador); // consome *, / ou and
+
+            noArvoreDTO noDireita = fator();
+
+            noArvoreDTO noPai = new noArvoreDTO("Termo", operador);
+            noPai.addFilho(noEsquerda);
+            noPai.addFilho(noDireita);
+
+            noEsquerda = noPai;
         }
 
-        // Se cair aqui, era algo inválido no meio da conta
-        listaErrosSintaticos.add(new CompilerException.TokenInesperadoException(
-                "Tipo esperado: IDENTIFICADOR ou NUM",
-                tokenAtual.getToken(),
-                tokenAtual.getLexema(),
-                tokenAtual.getLinha(),
-                tokenAtual.getColunaInicial()));
-        sincronizar(FOLLOW_EXPRESSAO);
-        return null;
+
+        return noEsquerda;
+    }
+
+    public noArvoreDTO fator() {
+
+        switch (tokenAtual.getToken()) {
+            case "IDENTIFICADOR" -> {
+                String nomeIdentificador = tokenAtual.getLexema();
+                match("IDENTIFICADOR");
+
+                if (tokenAtual.getToken().equals("ABRECOLCHETE")) {
+                    match("ABRECOLCHETE");
+                    noArvoreDTO indiceVetor = expressao();
+                    match("FECHACOLCHETE");
+
+                    noArvoreDTO noVEtor = new noArvoreDTO("Vetor", nomeIdentificador);
+                    if (indiceVetor != null) {
+                        noVEtor.addFilho(indiceVetor);
+                    }
+                    return noVEtor;
+                } else { // se não tem colchete, é uma variável simples (folha)
+                    return new noArvoreDTO("Variável", nomeIdentificador);
+                }
+            }
+            case "NUM" -> {
+                noArvoreDTO noNum = new noArvoreDTO("Número", tokenAtual.getLexema());
+                match("NUM");
+
+                return noNum;
+            }
+            case "TRUE", "FALSE" -> {
+                noArvoreDTO noBool = new noArvoreDTO("Booleano", tokenAtual.getLexema());
+                match(tokenAtual.getToken());
+
+                return noBool;
+            }
+            case "ABREPAR" -> {
+                match("ABREPAR");
+
+                noArvoreDTO noExpressaoInterna = expressao();
+                match("FECHAPAR");
+                return noExpressaoInterna;
+            }
+            case "OPNOT" -> {
+                match("OPNOT");
+
+                noArvoreDTO noFatorNEgado = fator();
+                noArvoreDTO noNot = new noArvoreDTO("Operador Unário", "not");
+                if (noFatorNEgado != null) { noNot.addFilho(noFatorNEgado); }
+                return noNot;
+}
+            default -> {
+                listaErrosSintaticos.add(new CompilerException.TokenInesperadoException(
+                        "Início de fator válido (Identificador, Número, '(', 'not', 'true', 'false')",
+                        tokenAtual.getToken(),
+                        tokenAtual.getLexema(),
+                        tokenAtual.getLinha(),
+                        tokenAtual.getColunaInicial()
+                ));
+
+                // Joga foras os tokens até encontrar um ponto seguro da matemática
+                sincronizar(FOLLOW_EXPRESSAO);
+                return null;
+            }
+        }
+
     }
 
 
