@@ -88,9 +88,18 @@
 
       <div class="main-display-area">
 
-        <div v-show="visaoAtiva === 'visao-editor'" style="display: flex; height: 100%;" class="editor-container">
-          <textarea id="codigo-fonte" v-model="codigoFonte" @input="atualizarLinhas" spellcheck="false"
-                    placeholder="Digite seu código LALG aqui..."></textarea>
+        <div v-if="visaoAtiva === 'visao-editor'" style="display: flex; height: 100%;" class="editor-container">
+<!--          <textarea id="codigo-fonte" v-model="codigoFonte" @input="atualizarLinhas" spellcheck="false"-->
+<!--                    placeholder="Digite seu código LALG aqui..."></textarea>-->
+          <codemirror
+              v-model="codigoFonte"
+              placeholder="Digite seu código LALG aqui..."
+              :style="{ height: '100%', width: '100%', fontSize: '14px'}"
+              :autofocus="true"
+              :indent-with-tab="true"
+              :tab-size="3"
+              :extensions="extensions"
+          />
         </div>
 
         <div v-show="visaoAtiva === 'visao-lexemas'" class="tabela-container">
@@ -127,7 +136,7 @@
              :class="{ 'maximized-view': arvoreMaximizada }"
              style="height: 100%; border: 1px solid var(--borda); border-radius: 12px; overflow: hidden; background: white;">
 
-          <button class="btn-floating-action" @click="arvoreMaximizada = !arvoreMaximizada">
+          <button class="btn-action-arvore" @click="arvoreMaximizada = !arvoreMaximizada">
             {{ arvoreMaximizada ? '🗗 Restaurar' : '🗖 Maximizar Árvore' }}
           </button>
 
@@ -180,13 +189,18 @@
 </template>
 
 <script setup>
-import {ref, onMounted} from 'vue'
-import {VueFlow} from '@vue-flow/core'
-import {Background} from '@vue-flow/background'
-import {Controls} from '@vue-flow/controls'
+import { ref, onMounted } from 'vue';
+import { VueFlow } from '@vue-flow/core';
+import { Background } from '@vue-flow/background';
+import { Controls } from '@vue-flow/controls';
+import { Codemirror } from 'vue-codemirror';
+import { StreamLanguage } from '@codemirror/language';
+import { pascal } from '@codemirror/legacy-modes/mode/pascal';
 
 import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
+
+const extensions = [StreamLanguage.define(pascal)];
 
 const codigoFonte = ref('program ola_mundo;\nint a, b, soma; \nbegin\n   a := 10;\n   b := 5;\n   soma := a + b;\nend.')
 const visaoAtiva = ref('visao-editor') // Controla a tela principal (editor, lexemas, arvore)
@@ -221,8 +235,7 @@ function mudarTema(novoTema) {
 }
 
 function atualizarLinhas() {
-  // Conta quantas quebras de linha existem no texto
-  linhasDigitadas.value = codigoFonte.value.split('\n').length
+  if (!codigoFonte) return;
 }
 
 function alternaConsole() {
@@ -237,7 +250,7 @@ function abrirArqiuvo() {
 function novoArquivo() {
   if (confirm("Deseja apagar o código atual e criar um novo?")) {
     codigoFonte.value = ''
-    atualizarLinhas()
+    //atualizarLinhas()
     nosDaArvore.value = []
     linhasDaArvore.value = []
     erros.value = []
@@ -535,6 +548,7 @@ onMounted(() => {
   --sucesso-bg: #1e4620;
   --sucesso-texto: #89d185;
   --hover-tabela: #2a2d2e;
+  --btn--action: #5555;
 }
 
 [data-theme="dracula"] {
@@ -557,6 +571,7 @@ onMounted(() => {
   --sucesso-bg: #50fa7b40;
   --sucesso-texto: #50fa7b;
   --hover-tabela: #44475a;
+  --btn-floating-action: #5555;
 }
 
 /* Transição suave para todas as mudanças de cor */
@@ -757,7 +772,7 @@ button {
   color: var(--cor-primaria-hover);
 }
 
-.btn-compilar {
+.btn-compilar .btn-floating-action {
   background-color: var(--cor-primaria);
   color: var(--texto-escuro);
   padding: 10px 24px;
@@ -782,14 +797,39 @@ button {
   font-weight: 400;
 }
 
-.editor-container {
-  flex: 1;
-  background-color: var(--bg-main);
-  border: 1px solid var(--borda);
-  border-radius: 12px;
-  display: flex;
-  overflow: hidden;
-  position: relative;
+
+.editor-container .cm-editor {
+  height: 100%;
+  width: 100%;
+  outline: none !important; /* Remove a borda azul/preta de foco padrão */
+  border: 1px solid var(--borda); /* Usa a variável do tema */
+  border-radius: 8px;
+  font-family: 'Fira Code', 'Consolas', monospace;
+  font-size: 14px;
+}
+
+/* barra lateral esquerda (calha de números) */
+.cm-gutters {
+  background-color: #f8fafc !important;
+  border-right: 1px solid var(--borda) !important;
+  color: #94a3b8 !important;
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+}
+
+/* destaque da linha ativa - onde o cursor está */
+.cm-activeLine {
+  background-color: rgba(226, 232, 240, 0.4) !important;
+}
+.cm-activeLineGutter {
+  background-color: #e2e8f0 !important;
+  color: #1e293b !important;
+  font-weight: bold;
+}
+
+/* comportamento do scroll interno do editor */
+.cm-scroller {
+  overflow: auto !important;
 }
 
 .line-numbers {
@@ -840,6 +880,10 @@ button {
 
 .btn-toggle-console:hover {
   background: #e2e8f0;
+}
+
+.btn-floating-action {
+
 }
 
 /* quando o console está minimizado, ele fica só com a barra do título */
