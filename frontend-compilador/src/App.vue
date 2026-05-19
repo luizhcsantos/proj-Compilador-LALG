@@ -81,7 +81,6 @@
           <span @click="salvarARquivo">Salvar</span>
 
 
-
         </div>
         <button class="btn-compilar" @click="compilar">Compilar</button>
       </div>
@@ -89,8 +88,8 @@
       <div class="main-display-area">
 
         <div v-if="visaoAtiva === 'visao-editor'" style="display: flex; height: 100%;" class="editor-container">
-<!--          <textarea id="codigo-fonte" v-model="codigoFonte" @input="atualizarLinhas" spellcheck="false"-->
-<!--                    placeholder="Digite seu código LALG aqui..."></textarea>-->
+          <!--          <textarea id="codigo-fonte" v-model="codigoFonte" @input="atualizarLinhas" spellcheck="false"-->
+          <!--                    placeholder="Digite seu código LALG aqui..."></textarea>-->
           <codemirror
               v-model="codigoFonte"
               placeholder="Digite seu código LALG aqui..."
@@ -131,26 +130,50 @@
           </table>
         </div>
 
-        <div v-show="visaoAtiva === 'visao-arvore'"
+        <div v-if="visaoAtiva === 'visao-arvore'"
              class="arvore-container"
              :class="{ 'maximized-view': arvoreMaximizada }"
              style="height: 100%; border: 1px solid var(--borda); border-radius: 12px; overflow: hidden; background: white;">
 
-          <button class="btn-action-arvore" @click="arvoreMaximizada = !arvoreMaximizada">
-            {{ arvoreMaximizada ? '🗗 Restaurar' : '🗖 Maximizar Árvore' }}
-          </button>
+          <div
+              style="display: flex; gap: 15px; padding: 10px 15px; background: var(--bg-main); border-bottom: 1px solid var(--borda); align-items: center;">
+            <button class="btn-action-arvore" @click="arvoreMaximizada = !arvoreMaximizada">
+              {{ arvoreMaximizada ? '🗗 Restaurar' : '🗖 Maximizar' }}
+            </button>
 
-          <VueFlow :nodes="nosDaArvore" :edges="linhasDaArvore">
-            <Background pattern-color="#aaa" gap="8"/>
-            <Controls/>
-          </VueFlow>
+            <div style="width: 1px; background: var(--borda); height: 20px;"></div>
+            <button @click="mostrarArvoreCompleta" :style="{ fontWeight: !modoPassoPasso ? 'bold' : 'normal' }">🌳
+              Completa
+            </button>
+            <button @click="iniciarPassoAPasso" :style="{ fontWeight: modoPassoPasso ? 'bold' : 'normal' }">👣 Passo a
+              Passo
+            </button>
+
+            <div v-show="modoPassoPasso" style="display: flex; gap: 10px; margin-left: auto; align-items: center;">
+              <button @click="passoAnterior" :disabled="passoAtual === 0"
+                      style="background: var(--bg-card); padding: 4px 8px; border-radius: 4px;">⏪ Voltar
+              </button>
+              <span style="font-size: 13px; font-weight: bold;">{{ passoAtual }} / {{ totalPAssos }}</span>
+              <button @click="proximoPasso" :disabled="passoAtual === totalPAssos"
+                      style="background: var(--bg-card); padding: 4px 8px; border-radius: 4px;">Avançar ⏩
+              </button>
+            </div>
+          </div>
+
+          <div style="flex: 1; width: 100%; height: 100%; min-height: 0; position: relative;">
+            <VueFlow :nodes="nosDaArvore" :edges="linhasDaArvore" style="width: 100%; height: 100%;">
+              <Background pattern-color="#aaa" gap="8"/>
+              <Controls/>
+            </VueFlow>
+          </div>
         </div>
 
       </div>
 
       <div class="console-panel" :class="{ 'console-minimizado': !consoleAberto }">
 
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--borda);">
+        <div
+            style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--borda);">
           <div class="tabs" style="border-bottom: none;">
             <button class="tab" :class="{ active: abaAtiva === 'tab-erros' }" @click="mudarAba('tab-erros')">
               Erros ({{ erros?.length || 0 }})
@@ -189,37 +212,44 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
-import { VueFlow } from '@vue-flow/core';
-import { Background } from '@vue-flow/background';
-import { Controls } from '@vue-flow/controls';
-import { Codemirror } from 'vue-codemirror';
-import { StreamLanguage } from '@codemirror/language';
-import { pascal } from '@codemirror/legacy-modes/mode/pascal';
+import {ref, onMounted, computed} from 'vue';
+import {VueFlow} from '@vue-flow/core';
+import {Background} from '@vue-flow/background';
+import {Controls} from '@vue-flow/controls';
+import {Codemirror} from 'vue-codemirror';
+import {StreamLanguage} from '@codemirror/language';
+import {pascal} from '@codemirror/legacy-modes/mode/pascal';
 
 import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
 
 const extensions = [StreamLanguage.define(pascal)];
 
-const codigoFonte = ref('program ola_mundo;\nint a, b, soma; \nbegin\n   a := 10;\n   b := 5;\n   soma := a + b;\nend.')
-const visaoAtiva = ref('visao-editor') // Controla a tela principal (editor, lexemas, arvore)
-const abaAtiva = ref('tab-logs')       // Controla o console inferior
-const menuTemaAberto = ref(false)
-const temaAtual = ref('claro')
-const linhasDigitadas = ref(5)
+const codigoFonte = ref('program ola_mundo;\nint a, b, soma; \nbegin\n   a := 10;\n   b := 5;\n   soma := a + b;\nend.');
+const visaoAtiva = ref('visao-editor'); // Controla a tela principal (editor, lexemas, arvore)
+const abaAtiva = ref('tab-logs');   // Controla o console inferior
+const menuTemaAberto = ref(false);
+const temaAtual = ref('claro');
+const linhasDigitadas = ref(5);
 
-const erros = ref([])
-const logs = ref(['Aguardando compilação...'])
-const listaTokens = ref([])
-const nosDaArvore = ref([])
-const linhasDaArvore = ref([])
-const totalNos = ref(0)
+const erros = ref([]);
+const logs = ref(['Aguardando compilação...']);
+const listaTokens = ref([]);
+
+const arvoreCompleta = ref(null);
+const nosDaArvore = ref([]);
+const linhasDaArvore = ref([]);
+const totalNos = ref(0);
+
+const modoPassoPasso = ref(false);
+const passoAtual = ref(0);
+const totalPAssos = ref(0);
+
 const consoleAberto = ref(true);
 const arvoreMaximizada = ref(false);
 const inputArquivoEscondido = ref(null);
 
-// === FUNÇÕES DA INTERFACE ===
+// === Funções da interface ===
 function mudarVisao(novaVisao) {
   visaoAtiva.value = novaVisao
 }
@@ -284,7 +314,7 @@ function salvarARquivo() {
     return;
   }
 
-  const blob = new Blob([codigoFonte.value], { type: 'text/plain;charset=utf-8' });
+  const blob = new Blob([codigoFonte.value], {type: 'text/plain;charset=utf-8'});
 
   const urlTemporaria = URL.createObjectURL(blob);
 
@@ -304,7 +334,6 @@ function salvarARquivo() {
 
   logs.value.push("💾 Arquivo salvo com sucesso!");
 }
-
 
 
 // integração com o backend
@@ -332,6 +361,10 @@ async function compilar() {
       listaTokens.value = dados.tokens || []
       logs.value.push("✅ Análise léxica concluída com sucesso!")
       mudarVisao('visao-lexemas')
+
+      arvoreCompleta.value = dados.arvoreSintatica;
+      modoPassoPasso.value = false;
+
       processarArvore(dados.arvoreSintatica)
       // mudarVisao('visao-arvore')  // Abre a aba da arvore automaticamente
     } else {
@@ -424,70 +457,137 @@ function processarArvore(noRaiz) {
     return {id: meuId, x: meuX};
 
   }
+  calcularPosicoes(noRaiz, 0);
+  nosDaArvore.value = nodes;
+  linhasDaArvore.value = edges;
+  totalNos.value = nodes.length;
+}
 
-  function percorrer(no, idDoPai, nivelX, nivelY) {
-    if (!no) return;
-    let meuId = `node_${idContador++}`
+function podarArvore(noOriginal, limitePassos, contador = {atual: 0}) {
 
-    let ehTerminal = !no.filhos || no.filhos.length === 0;
+  if (!noOriginal || contador.atual > limitePassos) return null;
 
-    nodes.push({
-      id: meuId,
-      position: {x: nivelX * 200, y: nivelY * 120},
-      data: {
-        // Se for folha, mostra o texto real (ex: 'a', ':=', '10')
-        // Se for ramificação, mostra o nome da regra (ex: '<Atribuição>')
-        label: ehTerminal ? (no.valor || no.nome) : `<${no.nome}>`
-      },
-      style: ehTerminal
-          // Estilo dos terminais
-          ? {
-            backgroundColor: '#3a4938',
-            color: '#f81b1b',
-            fontWeight: 'bold',
-            borderRadius: '30px',
-            border: '2px solid #eab308',
-            padding: '10px 20px'
-          }
-          // Estilo dos não-terminais
-          : {
-            backgroundColor: '#a38ec2',
-            color: 'white',
-            fontWeight: 'bold',
-            borderRadius: '8px',
-            border: '2px solid #9333ea',
-            padding: '10px 20px'
-          }
-    })
+  const noClonado = {nome: noOriginal.nome, valor: noOriginal.valor, filhos: []};
 
-    if (idDoPai) {
-      edges.push({
-        id: `e_${idDoPai}-${meuId}`,
-        source: idDoPai,
-        target: meuId,
-        type: 'smoothstep',
-        animated: true,
-        style: {strokeWidth: 2, stroke: '#000'},
-      })
-    }
+  contador.atual++;
 
-    if (no.filhos && no.filhos.length > 0) {
+  if (noOriginal.filhos && noOriginal.filhos.length > 0) {
+    for (let filho of noOriginal.filhos) {
 
-      let centro = (no.filhos.length - 1) / 2;
+      if (contador.atual > limitePassos) break;
 
-      no.filhos.forEach((filho, index) => {
-        let deslocamentoX = (index - centro) * 1.5;
-        percorrer(filho, meuId, nivelX + deslocamentoX, nivelY + 1)
-      })
+      const filhoPodado = podarArvore(filho, limitePassos, contador);
+      if (filhoPodado) {
+        noClonado.filhos.push(filhoPodado);
+      }
     }
   }
-
-  //percorrer(noRaiz, null, 0, 0)
-  calcularPosicoes(noRaiz, 0);
-  nosDaArvore.value = nodes
-  linhasDaArvore.value = edges
-  totalNos.value = nodes.length
+  return noClonado;
 }
+
+function contarNos(no) {
+  if (!no) return 0;
+  let contagem = 1;
+  if (no.filhos) {
+    no.filhos.forEach(filho => {
+      contagem += contarNos(filho);
+    })
+  }
+  return contagem;
+}
+
+function mostrarArvoreCompleta() {
+  if (!arvoreCompleta.value) return;
+  modoPassoPasso.value = false;
+  processarArvore(arvoreCompleta.value);
+}
+
+function iniciarPassoAPasso() {
+  if (!arvoreCompleta.value) return;
+  modoPassoPasso.value = true;
+  passoAtual.value = 0;
+
+  totalPAssos.value = contarNos(arvoreCompleta.value) - 1;
+  atualizarDEsenhoPasso();
+}
+
+function proximoPasso() {
+  if (passoAtual.value < totalPAssos.value) {
+    passoAtual.value++;
+    atualizarDEsenhoPasso();
+  }
+}
+
+function passoAnterior() {
+  if (passoAtual.value > 0) {
+    passoAtual.value--;
+    atualizarDEsenhoPasso();
+  }
+}
+
+function atualizarDEsenhoPasso() {
+  const arvoreParcial = podarArvore(arvoreCompleta.value, passoAtual.value, {atual: 0});
+
+  processarArvore(arvoreParcial);
+}
+
+function percorrer(no, idDoPai, nivelX, nivelY) {
+  if (!no) return;
+  let meuId = `node_${idContador++}`
+
+  let ehTerminal = !no.filhos || no.filhos.length === 0;
+
+  nodes.push({
+    id: meuId,
+    position: {x: nivelX * 200, y: nivelY * 120},
+    data: {
+      // Se for folha, mostra o texto real (ex: 'a', ':=', '10')
+      // Se for ramificação, mostra o nome da regra (ex: '<Atribuição>')
+      label: ehTerminal ? (no.valor || no.nome) : `<${no.nome}>`
+    },
+    style: ehTerminal
+        // Estilo dos terminais
+        ? {
+          backgroundColor: '#3a4938',
+          color: '#f81b1b',
+          fontWeight: 'bold',
+          borderRadius: '30px',
+          border: '2px solid #eab308',
+          padding: '10px 20px'
+        }
+        // Estilo dos não-terminais
+        : {
+          backgroundColor: '#a38ec2',
+          color: 'white',
+          fontWeight: 'bold',
+          borderRadius: '8px',
+          border: '2px solid #9333ea',
+          padding: '10px 20px'
+        }
+  })
+
+  if (idDoPai) {
+    edges.push({
+      id: `e_${idDoPai}-${meuId}`,
+      source: idDoPai,
+      target: meuId,
+      type: 'smoothstep',
+      animated: true,
+      style: {strokeWidth: 2, stroke: '#000'},
+    })
+  }
+
+  if (no.filhos && no.filhos.length > 0) {
+
+    let centro = (no.filhos.length - 1) / 2;
+
+    no.filhos.forEach((filho, index) => {
+      let deslocamentoX = (index - centro) * 1.5;
+      percorrer(filho, meuId, nivelX + deslocamentoX, nivelY + 1)
+    })
+  }
+}
+
 
 // Inicializa o tema ao carregar a página
 onMounted(() => {
@@ -548,7 +648,7 @@ onMounted(() => {
   --sucesso-bg: #1e4620;
   --sucesso-texto: #89d185;
   --hover-tabela: #2a2d2e;
-  --btn--action: #5555;
+  --btn-action-arvore: #5555;
 }
 
 [data-theme="dracula"] {
@@ -821,6 +921,7 @@ button {
 .cm-activeLine {
   background-color: rgba(226, 232, 240, 0.4) !important;
 }
+
 .cm-activeLineGutter {
   background-color: #e2e8f0 !important;
   color: #1e293b !important;
@@ -1118,7 +1219,7 @@ th {
   border: 1px solid var(--borda);
   border-radius: 6px;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   font-weight: bold;
   color: var(--texto-principal);
 }
