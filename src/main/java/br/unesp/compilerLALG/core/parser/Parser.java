@@ -20,8 +20,8 @@ public class Parser {
 
     /* TODO
         1. Expressões Relacionais (<, >, <=, >=, =, <>) e Lógicas (and, or, not) -- feito
-        2. Comandos de ControlE (IF e WHILE) -- if feito, while necessita de atenção
-        3. Comandos de Entrada/Saída (READ e WRITE)
+        2. Comandos de ControlE (IF e WHILE) -- if feito, while necessita de atenção -- feito
+        3. Comandos de Entrada/Saída (READ e WRITE) -- feito
         4. Procedimentos
         */
 
@@ -189,27 +189,133 @@ public class Parser {
 
     private noArvoreDTO parseBloco() {
 
-        noArvoreDTO bloco = new noArvoreDTO("bloco", "");
+        noArvoreDTO noBloco = new noArvoreDTO("Bloco", "");
 
-        if (FIRST_DECL_VAR.contains(tokenAtual.getToken())) {
-            parseParteDeclaracaoVariaveis();
+        // tenta ler a seção de variáveis locais
+        if (tokenAtual.getToken().equals("INT") || tokenAtual.getToken().equals("BOOLEAN") || tokenAtual.getToken().equals("VAR")) {
+            noArvoreDTO declaracoesVars = parseDeclaracaoVariaveis();
+            if (declaracoesVars != null) noBloco.addFilho(declaracoesVars);
         }
 
-        if (FIRST_DECL_PROC.contains(tokenAtual.getToken())) {
-            parseDeclaracaoProcedimentos();
+
+        if (tokenAtual.getToken().equals("PROCEDURE")) {
+            noArvoreDTO subrotinas = parseDeclaracoesSubrotinas();
+            if (subrotinas != null) noBloco.addFilho(subrotinas);
         }
 
-        noArvoreDTO noComandos = parseComandoComposto();
-        if (noComandos != null) {
-            bloco.addFilho(noComandos);
-        }
+        // corpo principal (Begin ... End.)
+        noArvoreDTO comandos = parseComandoComposto();
+        if (comandos != null) noBloco.addFilho(comandos);
 
-        return bloco;
+        return noBloco;
 
     }
 
-    private void parseDeclaracaoProcedimentos() {
+    private noArvoreDTO parseDeclaracoesSubrotinas() {
+        noArvoreDTO noSubrotinas = new noArvoreDTO("subrotinas", "");
 
+        while (tokenAtual.getToken().equals("PROCEDURE")) {
+            noArvoreDTO proc = parseDeclaracaoProcedimentos();
+            if (proc != null) {
+                noSubrotinas.addFilho(proc);
+            }
+            match("PONTOVIRGULA");
+        }
+        return noSubrotinas.getFilhos().isEmpty() ? null : noSubrotinas; // se não tem subrotinas, retorna null para não poluir a árvore
+    }
+
+    private noArvoreDTO parseDeclaracaoProcedimentos() {
+
+        noArvoreDTO noProc = new noArvoreDTO("Procedimento", "");
+
+        // consome a palavra reservada 'procedure'
+        // consome 'identificador' - nome do procedimento
+        // lista de palametros formais - pode ser opcional
+        //      ( seção de parametros formais - parametros formais' )
+        //          [ var ] <lista de identificadores> : <tipo> { ; <lista de identificadores> : <tipo> }
+        //              lista de identificadores ::= identificador { , identificador }
+        // consome ';'
+        // comando / comando composto
+        match("PROCEDURE");
+        String nomeProcedure = tokenAtual.getLexema();
+        if (tokenAtual.getToken().equals("IDENTIFICADOR")) {
+            noProc.addFilho(new noArvoreDTO("Nome", nomeProcedure));
+            match("IDENTIFICADOR");
+        } else {
+            listaErrosSintaticos.add(new CompilerException.TokenInesperadoException(
+                    "IDENTIFICADOR", tokenAtual.getToken(), tokenAtual.getLexema(),
+                    tokenAtual.getLinha(), tokenAtual.getColunaInicial()
+            ));
+        }
+
+        if (tokenAtual.getToken().equals("ABREPAR")) {
+            noArvoreDTO params = parseParametrosFormais();
+            if (params != null) {
+                noProc.addFilho(params);
+            }
+        }
+
+        match("PONTOVIRGULA");
+
+        noArvoreDTO bloco = parseBloco();
+        if (bloco != null) {
+            noProc.addFilho(bloco);
+        }
+
+        return noProc;
+    }
+
+    private noArvoreDTO parseParametrosFormais() {
+        noArvoreDTO noParams = new noArvoreDTO("Parâmetros Formais", "");
+        match("ABREPAR");
+
+        noArvoreDTO secao = parseSEcaoParametrosFormais();
+        if (secao != null) {
+            noParams.addFilho(secao);
+        }
+
+        while (tokenAtual.getToken().equals("PONTOVIRGULA")) {
+            match("PONTOVIRGULA");
+            noArvoreDTO secao2 = parseSEcaoParametrosFormais();
+            if (secao2 != null) {
+                noParams.addFilho(secao2);
+            }
+        }
+        match("FECHAPAR");
+        return noParams;
+    }
+
+    private noArvoreDTO parseSEcaoParametrosFormais() {
+
+        noArvoreDTO noSecao = new noArvoreDTO("Seção", "");
+
+        if (tokenAtual.getToken().equals("VAR")) {
+            noSecao.addFilho(new noArvoreDTO("Modificador", "var"));
+            match("VAR");
+        }
+
+        if (tokenAtual.getToken().equals("IDENTIFICADOR")) {
+            noSecao.addFilho(new noArvoreDTO("Identificador", tokenAtual.getLexema()));
+            match("IDENTIFICADOR");
+        }
+
+        while (tokenAtual.getToken().equals("VIRGULA")) {
+            match("VIRGULA");
+            if (tokenAtual.getToken().equals("IDENTIFICADOR")) {
+                noSecao.addFilho(new noArvoreDTO("Identificador", tokenAtual.getLexema()));
+                match("IDENTIFICADOR");
+            }
+            match("DOISPONTOS");
+
+            if (tokenAtual.getToken().equals("INT") || tokenAtual.getToken().equals("BOOLEAN")) {
+                noSecao.addFilho(new noArvoreDTO("Tipo", tokenAtual.getLexema()));
+                match(tokenAtual.getToken());
+            } else if (tokenAtual.getToken().equals("IDENTIFICADOR")) { // Algumas variantes de LALG aceitam identificador de tipo
+                noSecao.addFilho(new noArvoreDTO("Tipo", tokenAtual.getLexema()));
+                match("IDENTIFICADOR");
+            }
+        }
+        return noSecao;
     }
 
     private void parseParteDeclaracaoVariaveis() {
@@ -223,36 +329,52 @@ public class Parser {
         ;
     }
 
-    private void parseDeclaracaoVariaveis() {
+    private noArvoreDTO parseDeclaracaoVariaveis() {
 
-        if (tokenAtual.getToken().equals("INT")) {
-            match("INT");
-        } else if (tokenAtual.getToken().equals("BOOLEAN")) {
-            match("BOOLEAN");
-        } else {
-            listaErrosSintaticos.add(new CompilerException.TokenInesperadoException(
-                    "INT ou BOOLEAN",
-                    tokenAtual.getToken(),
-                    tokenAtual.getLexema(),
-                    tokenAtual.getLinha(),
-                    tokenAtual.getColunaInicial()
-            ));
+        noArvoreDTO noDeclaracoes = new noArvoreDTO("Declarações de Variáveis", "");
 
-            // PANIC MODE
-            // Sincroniza usando o FIRST do próximo elemento (que é IDENTIFICADOR)
-            // somado ao FOLLOW da regra atual (PONTOVIRGULA, BEGIN, PROCEDURE)
-            Set<String> syncSet = new HashSet<>();
-            syncSet.add("IDENTIFICADOR");
-            syncSet.addAll(FOLLOW_DECL_VAR);
+        // O laço continua enquanto o token atual for um tipo válido ('int' ou 'boolean')
+        while (tokenAtual.getToken().equals("INT") || tokenAtual.getToken().equals("BOOLEAN")) {
 
-            sincronizar(syncSet);
+            String tipoVar = tokenAtual.getLexema(); // Lê a palavra 'int' ou 'boolean'
+            String tokenTipo = tokenAtual.getToken();
+
+            noArvoreDTO noTipo = new noArvoreDTO("Tipo", tipoVar);
+            match(tokenTipo); // Consome o 'int' ou 'boolean'
+
+            // lê a primeira variável (obrigatória)
+            if (tokenAtual.getToken().equals("IDENTIFICADOR")) {
+                noTipo.addFilho(new noArvoreDTO("Variável", tokenAtual.getLexema()));
+                match("IDENTIFICADOR");
+            } else {
+                listaErrosSintaticos.add(new CompilerException.TokenInesperadoException(
+                        "IDENTIFICADOR", tokenAtual.getToken(), tokenAtual.getLexema(),
+                        tokenAtual.getLinha(), tokenAtual.getColunaInicial()
+                ));
+            }
+
+            // lê as restantes variáveis se houver vírgulas
+            while (tokenAtual.getToken().equals("VIRGULA")) {
+                match("VIRGULA");
+                if (tokenAtual.getToken().equals("IDENTIFICADOR")) {
+                    noTipo.addFilho(new noArvoreDTO("Variável", tokenAtual.getLexema()));
+                    match("IDENTIFICADOR");
+                } else {
+                    listaErrosSintaticos.add(new CompilerException.TokenInesperadoException(
+                            "IDENTIFICADOR", tokenAtual.getToken(), tokenAtual.getLexema(),
+                            tokenAtual.getLinha(), tokenAtual.getColunaInicial()
+                    ));
+                }
+            }
+
+            match("PONTOVIRGULA");
+
+            // "pendura" este bloco de tipo no nó principal de declarações
+            noDeclaracoes.addFilho(noTipo);
         }
 
-        // Se o Panic Mode funcionou, ele parou em cima de um Identificador ou de um ;
-        // Chama a lista de identificadores apenas se estiver num token válido
-        if (tokenAtual.getToken().equals("IDENTIFICADOR")) {
-            parseListaIdentificadores();
-        }
+        // Se por algum motivo o nó estiver vazio, devolvemos null para manter a árvore limpa
+        return noDeclaracoes.getFilhos().isEmpty() ? null : noDeclaracoes;
     }
 
     private void parseListaIdentificadores() {
@@ -296,7 +418,6 @@ public class Parser {
 
         noArvoreDTO noComando = new noArvoreDTO("comando", "");
 
-        //
         if (!FIRST_COMANDO.contains(tokenAtual.getToken())) {
             listaErrosSintaticos.add(new CompilerException.TokenInesperadoException(
                     "Início de comando válido (IDENTIFICADOR, READ, WRITE, IF, WHILE, BEGIN)",
@@ -373,13 +494,17 @@ public class Parser {
 
         noArvoreDTO noCondicao = new noArvoreDTO("Condição", "");
         noArvoreDTO expCondicao = expressao();
-        if  (expCondicao != null) { noCondicao.addFilho(expCondicao); }
+        if (expCondicao != null) {
+            noCondicao.addFilho(expCondicao);
+        }
         noWhile.addFilho(noCondicao);
 
         match("DO");
         noArvoreDTO noCorpo = new noArvoreDTO("Corpo do while (do)", "");
         noArvoreDTO cmdCorpo = parseComando();
-        if (cmdCorpo != null) { noCorpo.addFilho(cmdCorpo); }
+        if (cmdCorpo != null) {
+            noCorpo.addFilho(cmdCorpo);
+        }
         noWhile.addFilho(noCorpo);
 
         return noWhile;
@@ -395,15 +520,19 @@ public class Parser {
         // condição
         noArvoreDTO noCondicao = new noArvoreDTO("Condição", "");
         noArvoreDTO expCondicao = expressao();
-        if (expCondicao != null) { noCondicao.addFilho(expCondicao); }
+        if (expCondicao != null) {
+            noCondicao.addFilho(expCondicao);
+        }
         noIf.addFilho(noCondicao);
 
         match("THEN");
 
         // verdadeiro
-        noArvoreDTO noVerdadeiro =  new noArvoreDTO("Verdadeiro (then)", "");
+        noArvoreDTO noVerdadeiro = new noArvoreDTO("Verdadeiro (then)", "");
         noArvoreDTO cmdVerdadeiro = parseComando();
-        if (cmdVerdadeiro != null) { noVerdadeiro.addFilho(cmdVerdadeiro); }
+        if (cmdVerdadeiro != null) {
+            noVerdadeiro.addFilho(cmdVerdadeiro);
+        }
         noIf.addFilho(noVerdadeiro);
 
         // else (opcional)
@@ -412,7 +541,9 @@ public class Parser {
 
             noArvoreDTO noFalso = new noArvoreDTO("Falso (else)", "");
             noArvoreDTO cmdFalso = parseComando();
-            if (cmdFalso != null) { noFalso.addFilho(cmdFalso); }
+            if (cmdFalso != null) {
+                noFalso.addFilho(cmdFalso);
+            }
             noIf.addFilho(noFalso);
         }
 
@@ -467,7 +598,7 @@ public class Parser {
     private noArvoreDTO parseComandoLeitura() {
 
         noArvoreDTO noRead = new noArvoreDTO("Comando", "READ");
-        match("READ");    // <-- A MESMA COISA AQUI!
+        match("READ");
         match("ABREPAR");
 
         if (tokenAtual.getToken().equals("IDENTIFICADOR")) {
@@ -512,8 +643,6 @@ public class Parser {
             if (proximoCmd != null) {
                 lista.addFilho(proximoCmd);
             }
-
-//            sincronizar(FOLLOW_COMANDO);
         }
         return lista;
     }
@@ -536,14 +665,14 @@ public class Parser {
                 tokenAtual.getToken().equals("OPOR")) {
 
             String operador = tokenAtual.getLexema();
-            String tokenDoOperador = tokenAtual.getToken();// o sinal de +
+            String tokenDoOperador = tokenAtual.getToken();
             match(tokenDoOperador); // consome +, - ou or
 
             noArvoreDTO noDireita = termo();
 
             noArvoreDTO noPai = new noArvoreDTO("Expressão simples", operador);
 
-            // "pendura" a matemática na ordem exata: esquerda, meio(+), direita
+            // "pendura" a matemática na ordem exata: esquerda, meio (-, + ou or), direita
             noPai.addFilho(noEsquerda);
 
             noArvoreDTO terminalOperador = new noArvoreDTO("Operador", operador);
