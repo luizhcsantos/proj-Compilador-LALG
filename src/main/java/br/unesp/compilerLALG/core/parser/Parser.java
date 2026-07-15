@@ -177,7 +177,7 @@ public class Parser {
             match("PROGRAM");
 
             String nomePrograma = tokenAtual.getLexema();
-            noArvoreDTO noId = new  noArvoreDTO("IDENTIFICADOR", "id");
+            noArvoreDTO noId = new  noArvoreDTO("IDENTIFICADOR", nomePrograma);
             raizArvore.addFilho(noId);
             match("IDENTIFICADOR");
             noId.addFilho(new noArvoreDTO("id", nomePrograma));
@@ -187,13 +187,16 @@ public class Parser {
             noArvoreDTO noBloco = parseBloco();
             raizArvore.addFilho(noBloco);
 
+            raizArvore.addFilho(new  noArvoreDTO("PONTO", "."));
             match("PONTO");
 
         }
     }
 
+    // <bloco> ::= [<parte de declarção de variáveis>] [<parte de declaração de subrotinas>] <comando composto>
     private noArvoreDTO parseBloco() {
-        noArvoreDTO noRaizBloco = new noArvoreDTO("bloco", "teste");
+        noArvoreDTO noRaizBloco = new noArvoreDTO("bloco", "bloco");
+
 
         noArvoreDTO noComandoCompost = parseComandoComposto();
         noRaizBloco.addFilho(noComandoCompost);
@@ -201,12 +204,13 @@ public class Parser {
         return noRaizBloco;
     }
 
+    // <comando composto> ::= begin <comando> { ; <comando> } end
     private noArvoreDTO parseComandoComposto() {
-        noArvoreDTO noRaizComandoComposto = new noArvoreDTO("comando composto", "teste");
+        noArvoreDTO noRaizComandoComposto = new noArvoreDTO("comando composto", "comando composto");
         noRaizComandoComposto.addFilho(new noArvoreDTO("BEGIN", "BEGIN"));
         match("BEGIN");
 
-        noArvoreDTO comandos = new noArvoreDTO("comandos", "teste");
+        noArvoreDTO comandos = parseComando();
         noRaizComandoComposto.addFilho(comandos);
 
         noRaizComandoComposto.addFilho(new noArvoreDTO("END", "END"));
@@ -215,6 +219,223 @@ public class Parser {
         return noRaizComandoComposto;
     }
 
+    // <comando> ::= <identificador> <resto do comando>
+    // | <comando composto>
+    // | <comando condicional 1>
+    // | <comando repetitivo 1>
+    private noArvoreDTO parseComando() {
+        noArvoreDTO noRaizComando = new noArvoreDTO("comando", "teste");
+
+        switch(tokenAtual.getToken()) {
+            case "IDENTIFICADOR":
+                match("IDENTIFICADOR");
+                if (tokenAtual.getToken().equals("ABREPAR")) {
+                    match("ABREPAR");
+                    match("FECHAPAR");
+                    return new noArvoreDTO("chamada de função", "chamada de função");
+                }
+            case "READ":
+                //return parseLeitura();
+                break;
+            case "WRITE":
+                noRaizComando.addFilho(parseComandoEScrita());
+                return noRaizComando;
+            case "IF":
+                noRaizComando.addFilho(parseComandoCondicional());
+                return noRaizComando;
+            case "WHILE":
+                //return parseComandoRepetitivo();
+                break;
+            case "BEGIN":
+                //return parseComandoComposto();
+                break;
+            default:
+                return null;
+        }
+        return null;
+    }
+
+    private noArvoreDTO parseComandoCondicional() {
+        noArvoreDTO raizComandoCondicional = new noArvoreDTO("comando condicional", "comando condicional");
+        raizComandoCondicional.addFilho(new  noArvoreDTO("IF", "if"));
+        match("IF");
+
+        noArvoreDTO expressao = parseExpressao();
+        raizComandoCondicional.addFilho(expressao);
+
+        raizComandoCondicional.addFilho(new  noArvoreDTO("THEN", "then"));
+        match("THEN");
+
+        noArvoreDTO comando = parseComando();
+        raizComandoCondicional.addFilho(comando);
+
+        noArvoreDTO noElse = parseElse();
+        raizComandoCondicional.addFilho(noElse);
+
+        return raizComandoCondicional;
+    }
+
+    private noArvoreDTO parseElse() {
+
+        if (tokenAtual.getToken().equals("ELSE")) {
+            noArvoreDTO noElse = new noArvoreDTO("ELSE", "else");
+            match("ELSE");
+            noElse.addFilho(parseComando());
+            return noElse;
+        }
+        return null;
+    }
+
+    private noArvoreDTO parseComandoRepetitivo() {
+        return null;
+    }
+
+    private  noArvoreDTO parseComandoEScrita() {
+        noArvoreDTO raizEScrita = new  noArvoreDTO("identificador", "identificador");
+        raizEScrita.addFilho(new noArvoreDTO("escrita", "write"));
+        match("WRITE");
+        match("ABREPAR");
+        match("FECHAPAR");
+        match("PONTOVIRGULA");
+        return raizEScrita;
+    }
+
+    private  noArvoreDTO parseExpressao() {
+        return null;
+    }
+
+    private noArvoreDTO parseExpressaoSimples() {
+        // op termo expressãosimples
+
+        if (!FIRST_EXPRESSAO.contains(tokenAtual.getToken())) {
+            listaErrosSintaticos.add(new CompilerException.TokenInesperadoException(
+                    "Inicio de expressão válido (Numero,variável ou parenteses)",
+                    tokenAtual.getToken(),
+                    tokenAtual.getLexema(),
+                    tokenAtual.getLinha(),
+                    tokenAtual.getColunaInicial()
+            ));
+            sincronizar(FOLLOW_EXPRESSAO);
+            return null;
+        }
+        noArvoreDTO noEsquerda = parseTermo();
+        while (tokenAtual.getToken().equals("OPSOMA") ||
+                tokenAtual.getToken().equals("OPSUB") ||
+                tokenAtual.getToken().equals("OPOR")) {
+
+            String operador = tokenAtual.getLexema();
+            String tokenDoOperador = tokenAtual.getToken();
+            match(tokenDoOperador); // consome +, - ou or
+
+            noArvoreDTO noDireita = parseTermo();
+
+            noArvoreDTO noPai = new noArvoreDTO("Expressão simples", operador);
+
+            // "pendura" a matemática na ordem exata: esquerda, meio (-, + ou or), direita
+            noPai.addFilho(noEsquerda);
+
+            noArvoreDTO terminalOperador = new noArvoreDTO("Operador", operador);
+            noPai.addFilho(terminalOperador);
+
+            noPai.addFilho(noDireita);
+
+            noEsquerda = noPai;
+        }
+
+        return noEsquerda;
+    }
+
+    private noArvoreDTO parseTermo() {
+        // fator termo
+        noArvoreDTO noEsquerda = parseFator();
+
+        while (tokenAtual.getToken().equals("OPMUL") ||
+                tokenAtual.getToken().equals("OPDIV") ||
+                tokenAtual.getToken().equals("OPAND")) {
+
+            String operador = tokenAtual.getLexema();
+            String tokenDoOperador = tokenAtual.getToken();
+            match(tokenDoOperador); // consome *, / ou and
+
+            noArvoreDTO noDireita = parseFator();
+
+            noArvoreDTO noPai = new noArvoreDTO("Termo", operador);
+            noPai.addFilho(noEsquerda);
+            noPai.addFilho(noDireita);
+
+            noEsquerda = noPai;
+        }
+
+
+        return noEsquerda;
+    }
+
+    private noArvoreDTO parseFator() {
+        // variavel | numero | ( expressão ) | not fator
+        switch (tokenAtual.getToken()) {
+            case "IDENTIFICADOR" -> {
+                String nomeIdentificador = tokenAtual.getLexema();
+                match("IDENTIFICADOR");
+
+                if (tokenAtual.getToken().equals("ABRECOLCHETE")) {
+                    match("ABRECOLCHETE");
+                    noArvoreDTO indiceVetor = parseExpressaoSimples();
+                    match("FECHACOLCHETE");
+
+                    noArvoreDTO noVEtor = new noArvoreDTO("Vetor", nomeIdentificador);
+                    if (indiceVetor != null) {
+                        noVEtor.addFilho(indiceVetor);
+                    }
+                    return noVEtor;
+                } else { // se não tem colchete, é uma variável simples (folha)
+                    return new noArvoreDTO("Variável", nomeIdentificador);
+                }
+            }
+            case "NUM" -> {
+                noArvoreDTO noNum = new noArvoreDTO("Número", tokenAtual.getLexema());
+                match("NUM");
+
+                return noNum;
+            }
+            case "TRUE", "FALSE" -> {
+                noArvoreDTO noBool = new noArvoreDTO("Booleano", tokenAtual.getLexema());
+                match(tokenAtual.getToken());
+
+                return noBool;
+            }
+            case "ABREPAR" -> {
+                match("ABREPAR");
+
+                noArvoreDTO noExpressaoInterna = parseExpressaoSimples();
+                match("FECHAPAR");
+                return noExpressaoInterna;
+            }
+            case "OPNOT" -> {
+                match("OPNOT");
+
+                noArvoreDTO noFatorNEgado = parseFator();
+                noArvoreDTO noNot = new noArvoreDTO("Operador Unário", "not");
+                if (noFatorNEgado != null) {
+                    noNot.addFilho(noFatorNEgado);
+                }
+                return noNot;
+            }
+            default -> {
+                listaErrosSintaticos.add(new CompilerException.TokenInesperadoException(
+                        "Início de fator válido (Identificador, Número, '(', 'not', 'true', 'false')",
+                        tokenAtual.getToken(),
+                        tokenAtual.getLexema(),
+                        tokenAtual.getLinha(),
+                        tokenAtual.getColunaInicial()
+                ));
+
+                // Joga foras os tokens até encontrar um ponto seguro da matemática
+                sincronizar(FOLLOW_EXPRESSAO);
+                return null;
+            }
+        }
+
+    }
 
     public List<CompilerException.SyntaxException> getErros() {
         return listaErrosSintaticos;
