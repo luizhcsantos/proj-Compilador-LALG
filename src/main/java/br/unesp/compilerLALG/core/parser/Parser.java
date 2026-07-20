@@ -12,6 +12,7 @@ public class Parser {
     private final List<Token> tokens;
     private int posicaoAtual;
     private Token tokenAtual;
+    private int pos = 0;
     private noArvoreDTO raizArvore;
 
     // Lista para guardar os erros sintáticos (Panic Mode)
@@ -755,7 +756,7 @@ public class Parser {
 
     private noArvoreDTO parseVariavel() {
         noArvoreDTO noVar = new  noArvoreDTO("Variavel", "");
-        noVar.addFilho(new noArvoreDTO("Id", tokenAtual.getLexema()));
+        noVar.addFilho(new noArvoreDTO("Id", tokenAtual.getLexema(), tokenAtual.getLinha()));
         match("IDENTIFICADOR");
 
         noArvoreDTO noVarLinha = parseVariavelLinha();

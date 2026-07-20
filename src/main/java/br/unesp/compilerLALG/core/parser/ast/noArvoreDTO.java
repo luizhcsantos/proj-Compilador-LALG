@@ -7,12 +7,18 @@ public class noArvoreDTO {
 
     private String nome;
     private String valor;
+    private int linha;
     private List<noArvoreDTO> filhos = new ArrayList<>();
 
-    public noArvoreDTO(String nome, String valor) {
+    public noArvoreDTO(String nome, String valor, int linha) {
         this.nome = nome;
         this.valor = valor;
         this.filhos = new ArrayList<>();
+        this.linha = linha;
+    }
+
+    public noArvoreDTO(String nome, String valor) {
+       this(nome, valor, -1);
     }
 
     public void addFilho(noArvoreDTO filho) {
@@ -35,6 +41,10 @@ public class noArvoreDTO {
 
     public void setValor(String valor) {
         this.valor = valor;
+    }
+
+    public int getLinha() {
+        return linha;
     }
 
     public List<noArvoreDTO> getFilhos() {
