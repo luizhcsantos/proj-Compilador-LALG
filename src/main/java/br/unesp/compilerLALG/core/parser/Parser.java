@@ -493,7 +493,7 @@ public class Parser {
         match("WHILE");
 
         noArvoreDTO noCondicao = new noArvoreDTO("Condição", "");
-        noArvoreDTO expCondicao = expressao();
+        noArvoreDTO expCondicao = parseExpressao();
         if (expCondicao != null) {
             noCondicao.addFilho(expCondicao);
         }
@@ -519,7 +519,7 @@ public class Parser {
 
         // condição
         noArvoreDTO noCondicao = new noArvoreDTO("Condição", "");
-        noArvoreDTO expCondicao = expressao();
+        noArvoreDTO expCondicao = parseExpressao();
         if (expCondicao != null) {
             noCondicao.addFilho(expCondicao);
         }
@@ -564,7 +564,7 @@ public class Parser {
         noAtribuicao.addFilho(terminalSinal);
 
         // filho direito
-        noArvoreDTO resultadoMatematica = expressao();
+        noArvoreDTO resultadoMatematica = parseExpressao();
         if (resultadoMatematica != null) {
             noAtribuicao.addFilho(resultadoMatematica);
         }
@@ -578,14 +578,14 @@ public class Parser {
         match("WRITE");   // <-- SE ESTA LINHA NÃO RODAR, O COMPILADOR TRAVA!
         match("ABREPAR");
 
-        noArvoreDTO expressaoImpressa = expressao();
+        noArvoreDTO expressaoImpressa = parseExpressao();
         if (expressaoImpressa != null) {
             noWrite.addFilho(expressaoImpressa);
         }
 
         while (tokenAtual.getToken().equals("VIRGULA")) {
             match("VIRGULA");
-            noArvoreDTO proximaExpressao = expressao();
+            noArvoreDTO proximaExpressao = parseExpressao();
             if (proximaExpressao != null) {
                 noWrite.addFilho(proximaExpressao);
             }
@@ -648,149 +648,198 @@ public class Parser {
     }
 
     private noArvoreDTO expressaoSimples() {
-        if (!FIRST_EXPRESSAO.contains(tokenAtual.getToken())) {
-            listaErrosSintaticos.add(new CompilerException.TokenInesperadoException(
-                    "Inicio de expressão válido (Numero,variável ou parenteses)",
-                    tokenAtual.getToken(),
-                    tokenAtual.getLexema(),
-                    tokenAtual.getLinha(),
-                    tokenAtual.getColunaInicial()
-            ));
-            sincronizar(FOLLOW_EXPRESSAO);
-            return null;
+
+        noArvoreDTO noExpSimples = new noArvoreDTO("expressão simples", "");
+
+        // <op> ::= + | - | EPSILON
+        if (tokenAtual.getToken().equals("OPSOMA") || tokenAtual.getToken().equals("OPSUB")) {
+            noExpSimples.addFilho(new noArvoreDTO("Op", tokenAtual.getLexema()));
+            match(tokenAtual.getToken());
         }
-        noArvoreDTO noEsquerda = termo();
-        while (tokenAtual.getToken().equals("OPSOMA") ||
+
+        noArvoreDTO noTermo = parseTermo();
+        if (noTermo != null) { noExpSimples.addFilho(noTermo); }
+
+        noArvoreDTO noExpSimplesLinha = parseExpressaoSimplesLinha();
+        if  (noExpSimplesLinha != null) { noExpSimples.addFilho(noExpSimplesLinha); }
+
+        return noExpSimples;
+    }
+
+    private noArvoreDTO parseExpressaoSimplesLinha() {
+        // <op2> ::= + | - | or
+        if (tokenAtual.getToken().equals("OPSOMA") ||
                 tokenAtual.getToken().equals("OPSUB") ||
                 tokenAtual.getToken().equals("OPOR")) {
 
-            String operador = tokenAtual.getLexema();
-            String tokenDoOperador = tokenAtual.getToken();
-            match(tokenDoOperador); // consome +, - ou or
+            noArvoreDTO noLinha = new  noArvoreDTO("expressão simples", tokenAtual.getLexema());
+            match(tokenAtual.getToken());
 
-            noArvoreDTO noDireita = termo();
+            noArvoreDTO noTermo =  parseTermo();
+            if (noTermo != null) { noLinha.addFilho(noTermo); }
 
-            noArvoreDTO noPai = new noArvoreDTO("Expressão simples", operador);
+            noArvoreDTO proxLinha = parseExpressaoSimplesLinha();
+            if (proxLinha != null) { noLinha.addFilho(proxLinha); }
 
-            // "pendura" a matemática na ordem exata: esquerda, meio (-, + ou or), direita
-            noPai.addFilho(noEsquerda);
-
-            noArvoreDTO terminalOperador = new noArvoreDTO("Operador", operador);
-            noPai.addFilho(terminalOperador);
-
-            noPai.addFilho(noDireita);
-
-            noEsquerda = noPai;
+            return noLinha;
         }
 
-        return noEsquerda;
+        return null; // EPSILON
     }
 
-    public noArvoreDTO expressao() {
+    public noArvoreDTO parseExpressao() {
         noArvoreDTO noEsquerda = expressaoSimples();
 
-        if (FIRST_RELACAO.contains(tokenAtual.getToken())) {
+        if (isOperadorRelacional(tokenAtual.getToken())) {
 
             String operadorRelacional = tokenAtual.getLexema();
             String tokenDoOperador = tokenAtual.getToken();
 
-            // consome o sinal
+            noArvoreDTO noRelacional = new noArvoreDTO("Operador Relacional", operadorRelacional);
+
             match(tokenDoOperador);
 
-            noArvoreDTO noDireita = expressaoSimples();
+            noArvoreDTO noDireito = expressaoSimples();
 
+            if (noEsquerda != null) noRelacional.addFilho(noEsquerda);
+            if (noDireito != null) noRelacional.addFilho(noDireito);
 
-            noArvoreDTO noRelacao = new noArvoreDTO("Expressão relacional", operadorRelacional);
-
-            if (noEsquerda != null) {
-                noRelacao.addFilho(noEsquerda);
-            }
-
-            noArvoreDTO terminalOperador = new noArvoreDTO("Operador Relacional", operadorRelacional);
-            noRelacao.addFilho(terminalOperador);
-
-            if (noDireita != null) {
-                noRelacao.addFilho(noDireita);
-            }
-
-            return noRelacao;
+            return noRelacional;
         }
         return noEsquerda;
     }
 
-    public noArvoreDTO termo() {
-        noArvoreDTO noEsquerda = fator();
+    private boolean isOperadorRelacional(String token) {
+        return token.equals("OPIGUAL") ||       // =
+                token.equals("OPDIF") ||   // <>
+                token.equals("OPMENOR") ||       // <
+                token.equals("OPMENORIGUAL") ||  // <=
+                token.equals("OPMAIOR") ||       // >
+                token.equals("OPMAIORIGUAL");    // >=
+    }
 
-        while (tokenAtual.getToken().equals("OPMUL") ||
+    // <termo> ::= <fator> <termo'>
+    public noArvoreDTO parseTermo() {
+
+        noArvoreDTO noTermo =  new noArvoreDTO("Termo", "");
+        noArvoreDTO noFator = parseFator();
+        if (noFator != null) { noTermo.addFilho(noFator); }
+
+        noArvoreDTO noTermoLinha = parseTermoLinha();
+        if (noTermoLinha != null) { noTermo.addFilho(noTermoLinha); }
+
+        return noTermo;
+    }
+
+    // <termo'> ::= <op3> <fator> <termo'> | EPSILON
+    private noArvoreDTO parseTermoLinha() {
+        // <op3> ::= * | div | and
+        if (tokenAtual.getToken().equals("OPMUL") ||
                 tokenAtual.getToken().equals("OPDIV") ||
                 tokenAtual.getToken().equals("OPAND")) {
 
-            String operador = tokenAtual.getLexema();
-            String tokenDoOperador = tokenAtual.getToken();
-            match(tokenDoOperador); // consome *, / ou and
+            noArvoreDTO noLinha = new  noArvoreDTO("Termo'", tokenAtual.getLexema());
+            match(tokenAtual.getToken());
 
-            noArvoreDTO noDireita = fator();
+            noArvoreDTO noFator = parseFator();
+            if (noFator != null) { noLinha.addFilho(noFator); }
 
-            noArvoreDTO noPai = new noArvoreDTO("Termo", operador);
-            noPai.addFilho(noEsquerda);
-            noPai.addFilho(noDireita);
+            noArvoreDTO proxLinha = parseTermoLinha();
+            if (proxLinha != null) { noLinha.addFilho(proxLinha); }
 
-            noEsquerda = noPai;
+            return noLinha;
         }
-
-
-        return noEsquerda;
+        return null; // EPSILON
     }
 
-    public noArvoreDTO fator() {
+    private noArvoreDTO parseVariavel() {
+        noArvoreDTO noVar = new  noArvoreDTO("Variavel", "");
+        noVar.addFilho(new noArvoreDTO("Id", tokenAtual.getLexema()));
+        match("IDENTIFICADOR");
+
+        noArvoreDTO noVarLinha = parseVariavelLinha();
+        if (noVarLinha != null) { noVar.addFilho(noVarLinha); }
+
+        return noVar;
+    }
+
+    private noArvoreDTO parseVariavelLinha() {
+
+        if(tokenAtual.getToken().equals("ABRECOL")) {
+            noArvoreDTO noVarlinha = new noArvoreDTO("Variável", "array");
+            match("ABRECOL");
+
+            noArvoreDTO noExp = parseExpressao();
+            if (noExp != null) { noVarlinha.addFilho(noExp); }
+            match("FECHACOL");
+            return noVarlinha;
+        } else if (tokenAtual.getToken().equals("ABREPAR")) {
+            noArvoreDTO noVarLinha = new noArvoreDTO("Variável", "procedimento");
+            match("ABREPAR");
+
+            noArvoreDTO lista = parseListaExpressoes();
+            if (lista != null) { noVarLinha.addFilho(lista); }
+            match("FECHAPAR");
+            return noVarLinha;
+        }
+
+        return null; // EPSILON
+    }
+
+    private noArvoreDTO parseListaExpressoes() {
+
+        noArvoreDTO noLista = new noArvoreDTO("Lista express~eos", "");
+
+        noArvoreDTO exp = parseExpressao();
+        if (exp != null) { noLista.addFilho(exp); }
+
+        noArvoreDTO listaLinha = parseListaExpLinha();
+        if (listaLinha != null) { noLista.addFilho(listaLinha); }
+
+        return noLista;
+    }
+
+    private noArvoreDTO parseListaExpLinha() {
+
+        if (tokenAtual.getToken().equals("VIRGULA")) {
+            noArvoreDTO noLinha = new noArvoreDTO("Lista expressões", ",");
+            match("VIRGULA");
+
+            noArvoreDTO exp = parseExpressao();
+            if (exp != null) { noLinha.addFilho(exp); }
+
+            noArvoreDTO proxLinha = parseListaExpLinha();
+            if (proxLinha != null) { noLinha.addFilho(proxLinha); }
+
+            return noLinha;
+        }
+        return null; // EPSILON
+    }
+
+
+    public noArvoreDTO parseFator() {
+
+        noArvoreDTO noFator = new noArvoreDTO("Fator", "");
 
         switch (tokenAtual.getToken()) {
             case "IDENTIFICADOR" -> {
-                String nomeIdentificador = tokenAtual.getLexema();
-                match("IDENTIFICADOR");
-
-                if (tokenAtual.getToken().equals("ABRECOLCHETE")) {
-                    match("ABRECOLCHETE");
-                    noArvoreDTO indiceVetor = expressaoSimples();
-                    match("FECHACOLCHETE");
-
-                    noArvoreDTO noVEtor = new noArvoreDTO("Vetor", nomeIdentificador);
-                    if (indiceVetor != null) {
-                        noVEtor.addFilho(indiceVetor);
-                    }
-                    return noVEtor;
-                } else { // se não tem colchete, é uma variável simples (folha)
-                    return new noArvoreDTO("Variável", nomeIdentificador);
-                }
+                noArvoreDTO noVar = parseVariavel();
+                if (noVar != null) { noFator.addFilho(noVar); }
             }
             case "NUM" -> {
-                noArvoreDTO noNum = new noArvoreDTO("Número", tokenAtual.getLexema());
-                match("NUM");
-
-                return noNum;
-            }
-            case "TRUE", "FALSE" -> {
-                noArvoreDTO noBool = new noArvoreDTO("Booleano", tokenAtual.getLexema());
+                noFator.addFilho(new noArvoreDTO("Num", tokenAtual.getLexema()));
                 match(tokenAtual.getToken());
-
-                return noBool;
             }
-            case "ABREPAR" -> {
+            case "ABRPEAR" -> {
                 match("ABREPAR");
-
-                noArvoreDTO noExpressaoInterna = expressaoSimples();
+                noArvoreDTO noExp = parseExpressao();
+                if (noExp != null) { noFator.addFilho(noExp); }
                 match("FECHAPAR");
-                return noExpressaoInterna;
             }
-            case "OPNOT" -> {
-                match("OPNOT");
-
-                noArvoreDTO noFatorNEgado = fator();
-                noArvoreDTO noNot = new noArvoreDTO("Operador Unário", "not");
-                if (noFatorNEgado != null) {
-                    noNot.addFilho(noFatorNEgado);
-                }
-                return noNot;
+            case "NOT" -> {
+                match("NOT");
+                noArvoreDTO fNot = parseFator();
+                if (fNot != null) { noFator.addFilho(fNot); }
             }
             default -> {
                 listaErrosSintaticos.add(new CompilerException.TokenInesperadoException(
@@ -806,6 +855,7 @@ public class Parser {
                 return null;
             }
         }
+        return noFator;
 
     }
 

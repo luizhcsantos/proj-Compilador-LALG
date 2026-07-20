@@ -35,8 +35,8 @@ public enum TipoToken {
     PONTO("\\."),
     ABREPAR("\\("),
     FECHAPAR("\\)"),
-    ABRECOLCHETE("\\["),
-    FECHACOLCHETE("\\]");
+    ABRECOL("\\["),
+    FECHACOL("\\]");
 
     private final Pattern padrao;
 
