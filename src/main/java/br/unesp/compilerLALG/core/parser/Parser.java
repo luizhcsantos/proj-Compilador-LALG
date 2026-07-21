@@ -5,7 +5,10 @@ import br.unesp.compilerLALG.core.parser.ast.noArvoreDTO;
 import br.unesp.compilerLALG.exception.CompilerException;
 import org.jspecify.annotations.NonNull;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 public class Parser {
 
@@ -264,7 +267,7 @@ public class Parser {
     }
 
     private noArvoreDTO parseParametrosFormais() {
-        noArvoreDTO noParams = new noArvoreDTO("Parâmetros Formais", "");
+        noArvoreDTO noParams = new noArvoreDTO("Parametros Formais", "");
         match("ABREPAR");
 
         noArvoreDTO secao = parseSEcaoParametrosFormais();
@@ -329,7 +332,7 @@ public class Parser {
 
     private noArvoreDTO parseDeclaracaoVariaveis() {
 
-        noArvoreDTO noDeclaracoes = new noArvoreDTO("Declarações de Variáveis", "");
+        noArvoreDTO noDeclaracoes = new noArvoreDTO("Declaração de Variáveis", "");
 
         // O laço continua enquanto o token atual for um tipo válido ('int' ou 'boolean')
         while (FIRST_DECL_VAR.contains(tokenAtual.getToken())) {

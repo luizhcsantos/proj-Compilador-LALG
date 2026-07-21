@@ -4,6 +4,7 @@ import br.unesp.compilerLALG.core.lexer.Lexer;
 import br.unesp.compilerLALG.core.lexer.Token;
 import br.unesp.compilerLALG.core.parser.Parser;
 import br.unesp.compilerLALG.core.parser.ast.noArvoreDTO;
+import br.unesp.compilerLALG.core.semantic.AnalisadorSemantico;
 import br.unesp.compilerLALG.dto.CompilacaoRequest;
 import br.unesp.compilerLALG.dto.CompilacaoResponse;
 import org.springframework.http.ResponseEntity;
@@ -54,6 +55,16 @@ public class CompiladorController {
             response.setMensagem("Análise concluída com sucesso!");
 
             response.setArvoreSintatica(parser.getRaizArvore());
+        }
+
+        AnalisadorSemantico semantico = new AnalisadorSemantico();
+        semantico.analisar(parser.getRaizArvore());
+
+        if (!semantico.getErrosSemanticos().isEmpty()) {
+            // Retornar os erros Semânticos para o frontend!
+            for(String erro : semantico.getErrosSemanticos()) {
+                System.out.println(erro);
+            }
         }
 
         return ResponseEntity.ok(response);
