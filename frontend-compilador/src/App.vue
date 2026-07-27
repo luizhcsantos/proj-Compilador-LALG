@@ -130,7 +130,7 @@
           </table>
         </div>
 
-        <div v-if="visaoAtiva === 'visao-arvore'"
+        <div v-show="visaoAtiva === 'visao-arvore'"
              class="arvore-container"
              :class="{ 'maximized-view': arvoreMaximizada }"
              style="height: 100%; border: 1px solid var(--borda); border-radius: 12px; overflow: hidden; background: white;">
@@ -160,8 +160,11 @@
             </div>
           </div>
 
-          <div style="flex: 1; width: 100%; height: 100%; min-height: 0; position: relative;">
-            <VueFlow :nodes="nosDaArvore" :edges="linhasDaArvore" style="width: 100%; height: 100%;">
+          <div style="flex: 1; width: 100%; height: 100%; min-height: 500px; position: relative;">
+            <VueFlow
+                :nodes="nosDaArvore"
+                :edges="linhasDaArvore"
+                style="width: 100%; height: 100%;">
               <Background pattern-color="#aaa" gap="8"/>
               <Controls/>
             </VueFlow>
@@ -197,7 +200,7 @@
             </div>
           </div>
 
-          <div v-show="abaAtiva === 'tab-logs'" class="tab-content active">
+          <div v-show="abaAtiva === 'tab-logs'" class="tab-content active" ref="consoleArea">
             <div v-for="(log, index) in logs" :key="index" class="log-entry"
                  :class="{ sucesso: log.includes('sucesso'), erro: log.includes('fatal') }">
               {{ log }}
@@ -212,7 +215,7 @@
 </template>
 
 <script setup>
-import {ref, onMounted, computed} from 'vue';
+import {ref, onMounted, computed, watch, nextTick} from 'vue';
 import {VueFlow} from '@vue-flow/core';
 import {Background} from '@vue-flow/background';
 import {Controls} from '@vue-flow/controls';
@@ -230,11 +233,12 @@ const visaoAtiva = ref('visao-editor'); // Controla a tela principal (editor, le
 const abaAtiva = ref('tab-logs');   // Controla o console inferior
 const menuTemaAberto = ref(false);
 const temaAtual = ref('claro');
-const linhasDigitadas = ref(5);
+const linhasDigitadas = ref(codigoFonte.value.split('\n').length);
 
 const erros = ref([]);
 const logs = ref(['Aguardando compilação...']);
 const listaTokens = ref([]);
+const consoleArea = ref(null);
 
 const arvoreCompleta = ref(null);
 const nosDaArvore = ref([]);
@@ -396,8 +400,8 @@ function processarArvore(noRaiz) {
     let meuId = `node_${idContador++}`
     let meuX = 0;
 
-    let ehTerminal = !no.filhos || no.filhos.length === 0;
-
+    let ehTerminal = no.nome === "terminal" || !no.filhos || no.filhos.length === 0;
+    console.log(no);
     if (ehTerminal) {
       meuX = posicaoFolhaX; // se for folha, ganha a próxima posição X livre na tela
       posicaoFolhaX += 1;
@@ -428,30 +432,54 @@ function processarArvore(noRaiz) {
         posicaoFolhaX += 1;
       }
     }
+
+    let nodeStyle = {};
+    let nodeLAbel = '';
+
+    if (no.nome === 'terminal') {
+      nodeLAbel = no.valor;
+      nodeStyle = {
+        backgroundColor: '#f1f5f9',
+        color: '#475569',
+        border: '1px dashed #cbd5e1',
+        borderRadius: '50%',
+        padding: '10px',
+        minWidth: '40px',
+        textAlign: 'center',
+        fontSize: '12px'
+      };
+    } else if (ehTerminal) {
+      nodeLAbel = no.valor || no.nome;
+      nodeStyle = {
+        backgroundColor: '#fef08a',
+        color: '#854d0e',
+        fontWeight: 'bold',
+        borderRadius: '8px',
+        border: '2px solid #eab308',
+        padding: '10px 15px',
+        textAlign: 'center',
+        fontSize: '14px'
+      };
+    } else {
+      // Estilo para as Regras Gramaticais (Não-Terminais)
+      nodeLAbel = `<${no.nome}>`;
+      nodeStyle = {
+        backgroundColor: '#e0e7ff', // Azul muito claro
+        color: '#1e40af',           // Azul escuro
+        fontWeight: 'bold',
+        borderRadius: '4px',
+        border: '1px solid #93c5fd',
+        padding: '8px 12px',
+        textAlign: 'center',
+        fontSize: '13px'
+      };
+    }
+
     nodes.push({
       id: meuId,
-      // multiplica por um valor fixo em pixels para dar o espaçamento final
-      position: {x: meuX * 180, y: nivelY * 120},
-      data: {label: ehTerminal ? (no.valor || no.nome) : `<${no.nome}>`},
-      style: ehTerminal
-          ? {
-            backgroundColor: '#fef08a',
-            color: '#854d0e',
-            fontWeight: 'bold',
-            borderRadius: '30px',
-            border: '2px solid #eab308',
-            padding: '10px 20px',
-            textAlign: 'center'
-          }
-          : {
-            backgroundColor: '#c084fc',
-            color: 'white',
-            fontWeight: 'bold',
-            borderRadius: '8px',
-            border: '2px solid #9333ea',
-            padding: '10px 20px',
-            textAlign: 'center'
-          }
+      position: {x: meuX * 160, y: nivelY * 100}, // Ajustado para ficar um pouco mais compacto
+      data: {label: nodeLAbel},
+      style: nodeStyle
     });
 
     return {id: meuId, x: meuX};
@@ -587,6 +615,14 @@ function percorrer(no, idDoPai, nivelX, nivelY) {
     })
   }
 }
+
+watch(logs, async () => {
+  await nextTick();
+
+  if(consoleArea.value) {
+    consoleArea.value.scrollTop = consoleArea.value.scrollHeight;
+  }
+}, { deep: true});
 
 
 // Inicializa o tema ao carregar a página
@@ -1027,6 +1063,10 @@ button {
   overflow-y: auto;
   padding: 15px;
   display: none;
+
+  max-height: 250px;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .tab-content.active {

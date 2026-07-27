@@ -1,6 +1,6 @@
 package br.unesp.compilerLALG.core.semantic;
 
-import br.unesp.compilerLALG.core.parser.ast.noArvoreDTO;
+import br.unesp.compilerLALG.core.parser.ast.noArvore;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,48 +17,48 @@ public class AnalisadorSemantico {
         this.warnings = new ArrayList<String>();
     }
 
-    public void analisar(noArvoreDTO raizArvore) {
+    public void analisar(noArvore raizArvore) {
         if (raizArvore == null) return;
         visitar(raizArvore);
         verificarVariaveisNaoUsadas();
     }
 
-    private void visitar(noArvoreDTO no) {
+    private void visitar(noArvore no) {
         if (no == null) {
             return;
         }
 
         switch (no.getNome()) {
-            case "Declaração de variáveis":
+            case "declaração de variáveis":
                 processarDeclaracaoVariaveis(no);
                 break;
-            case "Declaração de procedimento":
+            case "declaração de procedimento":
                 processarProcedimento(no);
                 break;
-            case "Atribuição":
+            case "atribuição":
                 processarAtribuicao(no);
                 break;
-            case "Comando condicional 1":
-            case "Comando repetitivo 1":
+            case "comando condicional 1":
+            case "comando repetitivo 1":
                 processarIfWhile(no);
-            case "Variável":
-            case "Chamada de procedimento":
+            case "variável":
+            case "chamada de procedimento":
                 verificarUsoIdentificador(no);
                 break;
         }
 
-        for (noArvoreDTO filho : no.getFilhos()) {
+        for (noArvore filho : no.getFilhos()) {
             visitar(filho);
         }
     }
 
 
 
-    private void verificarUsoIdentificador(noArvoreDTO noId) {
+    private void verificarUsoIdentificador(noArvore noId) {
         String nome =  noId.getValor();
         int linha =  noId.getLinha();
 
-        if (noId.getNome().equals("Variável") && !noId.getFilhos().isEmpty()) {
+        if ((noId.getNome().equalsIgnoreCase("variável") || noId.getNome().equalsIgnoreCase("variavel")) && !noId.getFilhos().isEmpty()) {
             nome = noId.getFilhos().get(0).getValor();
             linha = noId.getFilhos().get(0).getLinha();
         }
@@ -71,23 +71,24 @@ public class AnalisadorSemantico {
         }
     }
 
-    private void processarAtribuicao(noArvoreDTO no) {
+    private void processarAtribuicao(noArvore no) {
 
-        noArvoreDTO noVar = no.getFilhos().get(0);
+        noArvore noVar = no.getFilhos().get(0);
         verificarUsoIdentificador(noVar);
 
         if (no.getFilhos().size() > 2) {
             visitar(no.getFilhos().get(2));
+
         }
     }
 
-    private void processarProcedimento(noArvoreDTO no) {
+    private void processarProcedimento(noArvore no) {
 
         String nomeProc = "";
         int linhaPRoc = -1;
 
-        for (noArvoreDTO noFilho : no.getFilhos()) {
-            if (noFilho.getNome().equals("Nome")) {
+        for (noArvore noFilho : no.getFilhos()) {
+            if (noFilho.getNome().equalsIgnoreCase("Nome")) {
                 nomeProc = noFilho.getValor();
                 linhaPRoc = noFilho.getLinha();
                 break;
@@ -104,10 +105,10 @@ public class AnalisadorSemantico {
 
         tabelaSimbolos.entrarEScopo(nomeProc);
 
-        for (noArvoreDTO filho : no.getFilhos()) {
-            if (filho.getNome().equals("Parametros Formais")) {
+        for (noArvore filho : no.getFilhos()) {
+            if (filho.getNome().equalsIgnoreCase("Parametros Formais")) {
                 processarParametros(filho);
-            } else if (!filho.getNome().equals("Nome")) {
+            } else if (!filho.getNome().equalsIgnoreCase("Nome")) {
                 visitar(filho);
             }
         }
@@ -117,11 +118,11 @@ public class AnalisadorSemantico {
         tabelaSimbolos.sairEscopo();
     }
 
-    private void processarParametros(noArvoreDTO noFilho) {
-        for (noArvoreDTO noTipo : noFilho.getFilhos()) {
+    private void processarParametros(noArvore noFilho) {
+        for (noArvore noTipo : noFilho.getFilhos()) {
             String tipoVariavel = noTipo.getValor();
 
-            for (noArvoreDTO noVar :  noTipo.getFilhos()) {
+            for (noArvore noVar :  noTipo.getFilhos()) {
                 String nomeVar = noVar.getNome();
                 int linha =  noTipo.getLinha();
 
@@ -137,13 +138,13 @@ public class AnalisadorSemantico {
         }
     }
 
-    private void processarDeclaracaoVariaveis(noArvoreDTO noDeclaracao) {
+    private void processarDeclaracaoVariaveis(noArvore noDeclaracao) {
 
-        for (noArvoreDTO noTipo : noDeclaracao.getFilhos()) {
+        for (noArvore noTipo : noDeclaracao.getFilhos()) {
             String tipoVariavel = noTipo.getValor();
 
-            for (noArvoreDTO noVar :  noTipo.getFilhos()) {
-                String nomeVar = noVar.getNome();
+            for (noArvore noVar :  noTipo.getFilhos()) {
+                String nomeVar = noVar.getValor();
                 int linha =  noTipo.getLinha();
 
                 try {
@@ -151,6 +152,7 @@ public class AnalisadorSemantico {
                             noVar.getValor(), null, false,
                             tabelaSimbolos.getNivelLexicoAtual(), tabelaSimbolos.getEscopoAtual());
                     tabelaSimbolos.adicionarSimbolo(s);
+                    System.out.println(s.toString());
                 } catch (Exception e) {
                     errosSemanticos.add("Linha " + linha + " -> " + e.getMessage());
                 }
@@ -158,38 +160,41 @@ public class AnalisadorSemantico {
         }
     }
 
-    private void processarIfWhile(noArvoreDTO no) {
+    private void processarIfWhile(noArvore no) {
 
     }
 
     private void verificarVariaveisNaoUsadas() {
         for (Simbolo s : tabelaSimbolos.getPilhaEscopos().peek().values()) {
-            if (!s.isUsada() && !s.getCategoria().equals("PROCEDURE")) {
+            if (!s.isUsada() && !s.getCategoria().equalsIgnoreCase("PROCEDURE")) {
                 errosSemanticos.add("Aviso: Símbolo '" + s.getSimbolo() + "' declarado no escopo '" +
                         tabelaSimbolos.getEscopoAtual() + "', mas nunca foi utilizado.");
             }
         }
     }
 
-    private String inferirTipoExpressao(noArvoreDTO no) {
+    private String inferirTipoExpressao(noArvore no) {
 
         if (no == null) return "ERRO";
 
         String nomeNo = no.getNome();
+
+        if (nomeNo.equalsIgnoreCase("terminal")) return "IGNORAR";
+
         String valorNo  = no.getValor() != null ? no.getValor().toLowerCase() : "";
 
-        if (nomeNo.equals("Operador relacional")) {
+        if (nomeNo.equalsIgnoreCase("operador relacional")) {
             return "BOOLEAN";
         }
 
-        if (valorNo.equals("and|or|not")) {
+        if (valorNo.equalsIgnoreCase("and|or|not")) {
             return "BOOLEAN";
         }
 
-        if (nomeNo.equals("NUM")) return "INT";
-        if (valorNo.equals("true") || valorNo.equals("false")) return "BOOLEAN";
+        if (nomeNo.equalsIgnoreCase("NUM")) return "INT";
+        if (valorNo.equalsIgnoreCase("true") || valorNo.equalsIgnoreCase("false")) return "BOOLEAN";
 
-        if (nomeNo.equals("Id") || nomeNo.equals("Variavél") && no.getFilhos().isEmpty()) {
+        if (nomeNo.equalsIgnoreCase("Id") || nomeNo.equalsIgnoreCase("variavél") && no.getFilhos().isEmpty()) {
             Simbolo s = tabelaSimbolos.buscarSimbolo(no.getValor());
             if (s != null) {
                 s.setUsada(true);
@@ -199,13 +204,14 @@ public class AnalisadorSemantico {
         }
 
         String tipoREsultante = null;
-        for (noArvoreDTO filho : no.getFilhos()) {
+        for (noArvore filho : no.getFilhos()) {
             String tipoFilho = inferirTipoExpressao(filho);
-            if (tipoFilho.equals("ERRO")) continue;
+            if (tipoFilho.equalsIgnoreCase("ERRO")) return "ERRO";
+            if (tipoFilho.equalsIgnoreCase("TERMINAL")) continue;
 
             if (tipoREsultante == null) {
                 tipoREsultante = tipoFilho;
-            } else if   (!tipoREsultante.equals(tipoFilho)) {
+            } else if   (!tipoREsultante.equalsIgnoreCase(tipoFilho)) {
                 errosSemanticos.add("Erro Semântico: Incompatibilidade de tipos na expressão. " +
                         "Tentativa de operar " + tipoREsultante + " com " + tipoFilho + ".");
                 return "ERRO";

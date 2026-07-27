@@ -3,7 +3,6 @@ package br.unesp.compilerLALG.controller;
 import br.unesp.compilerLALG.core.lexer.Lexer;
 import br.unesp.compilerLALG.core.lexer.Token;
 import br.unesp.compilerLALG.core.parser.Parser;
-import br.unesp.compilerLALG.core.parser.ast.noArvoreDTO;
 import br.unesp.compilerLALG.core.semantic.AnalisadorSemantico;
 import br.unesp.compilerLALG.dto.CompilacaoRequest;
 import br.unesp.compilerLALG.dto.CompilacaoResponse;
@@ -59,9 +58,10 @@ public class CompiladorController {
 
         AnalisadorSemantico semantico = new AnalisadorSemantico();
         semantico.analisar(parser.getRaizArvore());
+        response.setErros(semantico.getErrosSemanticos().stream().toList());
 
         if (!semantico.getErrosSemanticos().isEmpty()) {
-            // Retornar os erros Semânticos para o frontend!
+            // Retornar os erros Semânticos para o frontend
             for(String erro : semantico.getErrosSemanticos()) {
                 System.out.println(erro);
             }

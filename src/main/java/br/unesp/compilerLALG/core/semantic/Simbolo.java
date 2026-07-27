@@ -21,7 +21,8 @@ public class Simbolo {
         this.escopo = escopo;
     }
 
-    public Simbolo(String nomeVar, String tipo, String categoria, String valor, String passadaComo, boolean usada, int nivelLexico, String escopo) {
+    public Simbolo(String nomeVar, String tipo, String categoria, String valor,
+                   String passadaComo, boolean usada, int nivelLexico, String escopo) {
         this.simbolo = nomeVar;
         this.tipo = tipo;
         this.categoria = categoria;
@@ -32,7 +33,8 @@ public class Simbolo {
         this.escopo = escopo;
     }
 
-    public Simbolo(String nomeVar, String tipoVariavel, String variavel, int nivelLexicoAtual, String escopoAtual) {
+    public Simbolo(String nomeVar, String tipoVariavel, String variavel,
+                   int nivelLexicoAtual, String escopoAtual) {
         this.simbolo = nomeVar;
         this.tipo = tipoVariavel;
         this.categoria = variavel;

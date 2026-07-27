@@ -8,7 +8,6 @@ import java.util.Map;
 public class TabelaSimbolos {
 
     private final Deque<Map<String, Simbolo>> pilhaEscopos = new ArrayDeque<>();
-
     private int nivelLexicoAtual = 0;
     private String escopoAtual = "global";
 
