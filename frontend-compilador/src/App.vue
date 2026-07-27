@@ -366,6 +366,7 @@ async function compilar() {
       logs.value.push("✅ Análise léxica concluída com sucesso!")
       mudarVisao('visao-lexemas')
 
+      console.log(arvoreCompleta);
       arvoreCompleta.value = dados.arvoreSintatica;
       modoPassoPasso.value = false;
 
@@ -400,8 +401,9 @@ function processarArvore(noRaiz) {
     let meuId = `node_${idContador++}`
     let meuX = 0;
 
+    console.log()
+
     let ehTerminal = no.nome === "terminal" || !no.filhos || no.filhos.length === 0;
-    console.log(no);
     if (ehTerminal) {
       meuX = posicaoFolhaX; // se for folha, ganha a próxima posição X livre na tela
       posicaoFolhaX += 1;
@@ -485,6 +487,7 @@ function processarArvore(noRaiz) {
     return {id: meuId, x: meuX};
 
   }
+  console.log(noRaiz);
   calcularPosicoes(noRaiz, 0);
   nosDaArvore.value = nodes;
   linhasDaArvore.value = edges;

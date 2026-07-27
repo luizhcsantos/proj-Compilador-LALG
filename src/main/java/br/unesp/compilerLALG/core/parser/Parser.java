@@ -179,16 +179,15 @@ public class Parser {
     // Programa ::= PROGRAM <identificador> ; <bloco> .
     public void parsePrograma() {
 
-        noArvore raizArvore = new noArvore("programa", "");
+        raizArvore = new noArvore("programa", "");
 
-        raizArvore.addFilho(new noArvore("terminal", "program"));
+        //raizArvore.addFilho(new noArvore("terminal", "program"));
         matchEAdiciona("PROGRAM", raizArvore);
 
+        noArvore noId = new noArvore("identificador", "identificador", tokenAtual.getLinha());
+        raizArvore.addFilho(noId);
+        matchEAdiciona("IDENTIFICADOR", noId);
 
-        raizArvore.addFilho(new noArvore("id", tokenAtual.getLexema(), tokenAtual.getLinha()));
-        matchEAdiciona("IDENTIFICADOR", raizArvore);
-
-        raizArvore.addFilho(new noArvore("terminal", ";"));
         matchEAdiciona("PONTOVIRGULA", raizArvore);
 
 
@@ -218,7 +217,7 @@ public class Parser {
 
         // tenta ler a seção de variáveis locais
         if (FIRST_DECL_VAR.contains(tokenAtual.getToken())) {
-            noArvore declaracoesVars = parseDeclaracaoVariaveis();
+            noArvore declaracoesVars = parsePArteDeclaracaoVAriaveis();
             if (declaracoesVars != null) noBloco.addFilho(declaracoesVars);
         }
 
@@ -350,9 +349,25 @@ public class Parser {
         ;
     }
 
+    private noArvore parsePArteDeclaracaoVAriaveis() {
+
+        noArvore noParte = new  noArvore("parte declaração variáveis", "");
+
+        while (FIRST_DECL_VAR.contains(tokenAtual.getToken())) {
+            noArvore declaracoesVars = parseDeclaracaoVariaveis();
+            if (declaracoesVars != null) { noParte.addFilho(declaracoesVars); }
+
+            if (tokenAtual.getToken().equals("PONTOVIRGULA")) {
+                matchEAdiciona("PONTOVIRGULA", noParte);
+            }
+        }
+
+        return  noParte.getFilhos().isEmpty() ? null : noParte; // se não tem declarações, retorna null
+    }
+
     private noArvore parseDeclaracaoVariaveis() {
 
-        noArvore noDeclaracoes = new noArvore("declaração de variáveis", "");
+        noArvore noDeclaracoes = new noArvore("declaração variáveis", "");
 
         // O laço continua enquanto o token atual for um tipo válido ('int' ou 'boolean')
         while (FIRST_DECL_VAR.contains(tokenAtual.getToken())) {
@@ -502,15 +517,48 @@ public class Parser {
 
     private noArvore parseComandoComposto() {
 
-        noArvore noComando = new noArvore("composto", "");
+        noArvore noComando = new noArvore("comando composto", "");
         matchEAdiciona("BEGIN", noComando);
 
-        noArvore lista = parseListaComandos();
-        if (lista != null) {
-            noComando.addFilho(lista);
+        noArvore primeiroCmd = parseComando();
+        if (primeiroCmd != null) {
+            noComando.addFilho(primeiroCmd);
         }
+
+        noArvore cmdLinha = parseComandoCompostoLinha();
+        if (cmdLinha != null) {
+            noComando.addFilho(cmdLinha);
+        }
+
         matchEAdiciona("END", noComando);
         return noComando;
+    }
+
+    private noArvore parseComandoCompostoLinha() {
+
+        if (tokenAtual.getToken().equals("PONTOVIRGULA")) {
+            noArvore noLinha = new noArvore("comando composto'", "");
+
+            // pendura o ponto e vírgula na árvore
+            matchEAdiciona("PONTOVIRGULA", noLinha);
+
+            if (tokenAtual.getToken().equals("END")) {
+                return noLinha;
+            }
+
+            // pega o comando seguinte
+            noArvore proxCmd = parseComando();
+            if (proxCmd != null) { noLinha.addFilho(proxCmd); }
+
+            // chama ele proprio para ver se há mais ;
+            noArvore proxLinha = parseComandoCompostoLinha();
+            if (proxLinha != null) { noLinha.addFilho(proxLinha); }
+
+            return noLinha;
+        }
+
+        // epsilon
+        return null;
     }
 
     // <comando repetitivo 1> ::= while <expressão> do <comando>
@@ -583,12 +631,13 @@ public class Parser {
         noArvore noAtribuicao = new noArvore("atribuição", "");
 
         noArvore terminalVar = new noArvore("variável", nomeVariavel, linha);
+
         noAtribuicao.addFilho(terminalVar);
 
         matchEAdiciona("ATRIBUICAO", noAtribuicao);
 
-        noArvore terminalSinal = new noArvore("símbolo", ":=");
-        noAtribuicao.addFilho(terminalSinal);
+//        noArvore terminalSinal = new noArvore("símbolo", ":=");
+//        noAtribuicao.addFilho(terminalSinal);
 
 
         if (FIRST_EXPRESSAO.contains(tokenAtual.getToken())) {

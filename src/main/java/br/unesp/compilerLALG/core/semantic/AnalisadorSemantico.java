@@ -29,10 +29,10 @@ public class AnalisadorSemantico {
         }
 
         switch (no.getNome()) {
-            case "declaração de variáveis":
-                processarDeclaracaoVariaveis(no);
+            case "parte declaração variáveis":
+                processarParteDeclaracaoVariaveis(no);
                 break;
-            case "declaração de procedimento":
+            case "declaração procedimento":
                 processarProcedimento(no);
                 break;
             case "atribuição":
@@ -42,7 +42,7 @@ public class AnalisadorSemantico {
             case "comando repetitivo 1":
                 processarIfWhile(no);
             case "variável":
-            case "chamada de procedimento":
+            case "chamada procedimento":
                 verificarUsoIdentificador(no);
                 break;
         }
@@ -138,6 +138,34 @@ public class AnalisadorSemantico {
         }
     }
 
+    private void processarParteDeclaracaoVariaveis(noArvore noParteDeclaracao) {
+        for (noArvore noDeclaracao : noParteDeclaracao.getFilhos()) {
+            if (noDeclaracao.getNome().equalsIgnoreCase("declaracao variaveis")) {
+                for (noArvore noTipo : noDeclaracao.getFilhos()) {
+                    if (noTipo.getNome().equalsIgnoreCase("Tipo")) {
+                        String tipoVariavel =  noTipo.getValor(); // int ou boolean
+
+                        for (noArvore noId : noTipo.getFilhos()) {
+                            if (noId.getNome().equalsIgnoreCase("Id")) {
+                                String nomeVar =  noId.getValor();
+                                int linha =  noId.getLinha();
+
+                                try {
+                                    Simbolo s = new Simbolo(nomeVar, tipoVariavel, "VARIAVEL",
+                                            tabelaSimbolos.getNivelLexicoAtual(), tabelaSimbolos.getEscopoAtual());
+                                    tabelaSimbolos.adicionarSimbolo(s);
+                                } catch (Exception e) {
+                                    errosSemanticos.add("Linha " + linha + " -> " + e.getMessage());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+    }
+
     private void processarDeclaracaoVariaveis(noArvore noDeclaracao) {
 
         for (noArvore noTipo : noDeclaracao.getFilhos()) {
@@ -160,8 +188,22 @@ public class AnalisadorSemantico {
         }
     }
 
-    private void processarIfWhile(noArvore no) {
+    private void processarIfWhile(noArvore noComando) {
 
+        for (noArvore filho : noComando.getFilhos()) {
+            if (filho.getNome().equals("Condição")) {
+                if (!filho.getFilhos().isEmpty()) {
+                    String tipoCondicao = inferirTipoExpressao(filho.getFilhos().get(0));
+
+                    if (!tipoCondicao.equals("BOOLEAN") && !tipoCondicao.equals("ERRO") && !tipoCondicao.equals("IGNORAR")) {
+                        errosSemanticos.add("Erro Semântico: A condição do comando '" + noComando.getValor() + "' deve resultar em um valor BOOLEAN, mas retornou " + tipoCondicao + ".");
+                    }
+                }
+            } else {
+                // entra no " comando composto" e depois no "comando composto linha"
+                visitar(filho);
+            }
+        }
     }
 
     private void verificarVariaveisNaoUsadas() {
