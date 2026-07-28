@@ -215,19 +215,19 @@ public class Parser {
 
         noArvore noBloco = new noArvore("bloco", "");
 
-        // tenta ler a seção de variáveis locais
+        // <parte declaração de variáveis>
         if (FIRST_DECL_VAR.contains(tokenAtual.getToken())) {
             noArvore declaracoesVars = parsePArteDeclaracaoVAriaveis();
             if (declaracoesVars != null) noBloco.addFilho(declaracoesVars);
         }
 
-
+        // <parte declaração de subrotinas>
         if (tokenAtual.getToken().equals("PROCEDURE")) {
             noArvore subrotinas = parseDeclaracoesSubrotinas();
             if (subrotinas != null) noBloco.addFilho(subrotinas);
         }
 
-        // corpo principal (Begin ... End.)
+        // <comando composto>
         noArvore comandos = parseComandoComposto();
         if (comandos != null) { noBloco.addFilho(comandos); }
 
@@ -236,14 +236,19 @@ public class Parser {
     }
 
     private noArvore parseDeclaracoesSubrotinas() {
-        noArvore noSubrotinas = new noArvore("subrotinas", "");
+        noArvore noSubrotinas = new noArvore("declaração subrotinas", "");
 
         while (FIRST_DECL_PROC.contains(tokenAtual.getToken())) {
             noArvore proc = parseDeclaracaoProcedimentos();
             if (proc != null) { noSubrotinas.addFilho(proc); }
             matchEAdiciona("PONTOVIRGULA", noSubrotinas);
         }
-        return noSubrotinas.getFilhos().isEmpty() ? null : noSubrotinas; // se não tem subrotinas, retorna null para não poluir a árvore
+        return noSubrotinas.getFilhos().isEmpty() ? null : noSubrotinas; // se não tem subrotinas, retorna null
+    }
+
+    private noArvore parseParteDeclaracoesSubrotinasLinha() {
+
+        return null;
     }
 
     private noArvore parseDeclaracaoProcedimentos() {
@@ -285,6 +290,10 @@ public class Parser {
         return noProc;
     }
 
+    private noArvore parseDeclaracaoProcedimentosLinha() {
+        return null;
+    }
+
     private noArvore parseParametrosFormais() {
         noArvore noParams = new noArvore("parametros formais", "");
         matchEAdiciona("ABREPAR", noParams);
@@ -303,6 +312,10 @@ public class Parser {
         }
         matchEAdiciona("FECHAPAR", noParams);
         return noParams;
+    }
+
+    private noArvore parseParametrosFormaisLinha() {
+        return null;
     }
 
     private noArvore parseSEcaoParametrosFormais() {
@@ -338,116 +351,127 @@ public class Parser {
         return noSecao;
     }
 
-    private void parseParteDeclaracaoVariaveis() {
 
-        parseDeclaracaoVariaveis();
-        match("PONTOVIRGULA");
-        while (FIRST_DECL_VAR.contains(tokenAtual.getToken())) {
-            parseDeclaracaoVariaveis();
-            match("PONTOVIRGULA");
-        }
-        ;
-    }
-
+    // <parte_de_declarações_de_variáveis> ::= <declaração_de_variáveis> ; <declaração_de_variáveis'> | EPSILON
     private noArvore parsePArteDeclaracaoVAriaveis() {
 
         noArvore noParte = new  noArvore("parte declaração variáveis", "");
 
-        while (FIRST_DECL_VAR.contains(tokenAtual.getToken())) {
+        // <declaração de variáveis>
+        if (FIRST_DECL_VAR.contains(tokenAtual.getToken())) {
             noArvore declaracoesVars = parseDeclaracaoVariaveis();
             if (declaracoesVars != null) { noParte.addFilho(declaracoesVars); }
 
+            // ;
             if (tokenAtual.getToken().equals("PONTOVIRGULA")) {
                 matchEAdiciona("PONTOVIRGULA", noParte);
             }
+
+            // <declaração_de_variáveis'>
+            noArvore noDeclLinha = parseDeclaracaoVariaveisLinha();
+            if (noDeclLinha != null) noParte.addFilho(noDeclLinha);
+
+            return noParte;
         }
 
-        return  noParte.getFilhos().isEmpty() ? null : noParte; // se não tem declarações, retorna null
+        return null; // epsilon
     }
 
+    // <declaração_de_variáveis> ::= <tipo> <lista_de_identificadores>
     private noArvore parseDeclaracaoVariaveis() {
 
         noArvore noDeclaracoes = new noArvore("declaração variáveis", "");
 
-        // O laço continua enquanto o token atual for um tipo válido ('int' ou 'boolean')
-        while (FIRST_DECL_VAR.contains(tokenAtual.getToken())) {
-            String tipoVar = tokenAtual.getLexema(); // Lê a palavra 'int' ou 'boolean'
-            String tokenTipo = tokenAtual.getToken();
+        // Lê a palavra 'int' ou 'boolean'
+        String tipoVar = tokenAtual.getLexema();
+        String tokenTipo = tokenAtual.getToken();
 
-            noArvore noTipo = new noArvore("tipo", tipoVar);
-            matchEAdiciona(tokenTipo, noTipo); // Consome o 'int' ou 'boolean'
+        noArvore noTipo0 = new noArvore("tipo", "tipo");
+        noDeclaracoes.addFilho(noTipo0);
 
-            // lê a primeira variável (obrigatória)
+        noArvore noTipo = new noArvore("tipo", tipoVar);
+        noTipo0.addFilho(noTipo);
+        //noDeclaracoes.addFilho(noTipo);
+        match(tokenTipo);
+
+        noArvore noListaIds = parseListaIdentificadores();
+        if (noListaIds != null) noDeclaracoes.addFilho(noListaIds);
+
+        return noDeclaracoes;
+    }
+
+    private noArvore parseDeclaracaoVariaveisLinha() {
+
+        if (FIRST_DECL_VAR.contains(tokenAtual.getToken())) {
+            noArvore noDeclLinha = new noArvore("declaração de variáveis'", "");
+
+            noArvore noDecl = parseDeclaracaoVariaveis();
+            if (noDecl != null) noDeclLinha.addFilho(noDecl);
+
+
+            noArvore proxLinha = parseDeclaracaoVariaveisLinha(); // Recursão
+            if (proxLinha != null) noDeclLinha.addFilho(proxLinha);
+
+            matchEAdiciona("PONTOVIRGULA", noDeclLinha);
+
+            return noDeclLinha;
+        }
+        return null;
+    }
+
+    private noArvore parseListaIdentificadores() {
+
+        noArvore noListaIds = new  noArvore("lista de identificadores", "");
+        // <identificador>
+        if (tokenAtual.getToken().equalsIgnoreCase("IDENTIFICADOR")) {
+            noArvore noVAr = new  noArvore("variavel", tokenAtual.getLexema(), tokenAtual.getLinha());
+            noListaIds.addFilho(noVAr);
+            matchEAdiciona("IDENTIFICADOR", noVAr);
+        } else {
+            listaErrosSintaticos.add(new CompilerException.TokenInesperadoException(
+                    "IDENTIFICADOR", tokenAtual.getToken(), tokenAtual.getLexema(),
+                    tokenAtual.getLinha(), tokenAtual.getColunaInicial()
+            ));
+            sincronizar(FOLLOW_LISTA_ID);
+            return  noListaIds;
+        }
+
+        //<lista identificadores'>
+        noArvore noListaLinha = parseListaIdentificadoresLinha();
+        if (noListaLinha != null) noListaIds.addFilho(noListaLinha);
+
+
+        return noListaIds;
+    }
+
+    private noArvore parseListaIdentificadoresLinha() {
+
+        // ,
+        if(tokenAtual.getToken().equalsIgnoreCase("VIRGULA")) {
+            noArvore noListaLinha = new noArvore("lista de identificadores'", "");
+            matchEAdiciona("VIRGULA", noListaLinha);
+
+            // <identificador>
             if (tokenAtual.getToken().equals("IDENTIFICADOR")) {
-                noTipo.addFilho(new noArvore("variável", tokenAtual.getLexema()));
-                match("IDENTIFICADOR");
+                noArvore noVAr = new noArvore("variável", "");
+                noListaLinha.addFilho(noVAr);
+                matchEAdiciona("IDENTIFICADOR", noVAr);
             } else {
                 listaErrosSintaticos.add(new CompilerException.TokenInesperadoException(
                         "IDENTIFICADOR", tokenAtual.getToken(), tokenAtual.getLexema(),
                         tokenAtual.getLinha(), tokenAtual.getColunaInicial()
                 ));
+                sincronizar(FOLLOW_DECL_VAR);
+                return noListaLinha;
             }
+            // <lista identificadores '>
+            noArvore proxLinha = parseListaIdentificadoresLinha();
+            if (proxLinha != null) noListaLinha.addFilho(proxLinha);
 
-            // lê as restantes variáveis se houver vírgulas
-            while (tokenAtual.getToken().equals("VIRGULA")) {
-                matchEAdiciona("VIRGULA", noTipo);
-                if (tokenAtual.getToken().equals("IDENTIFICADOR")) {
-                    noTipo.addFilho(new noArvore("variável", tokenAtual.getLexema()));
-                    match("IDENTIFICADOR");
-                } else {
-                    listaErrosSintaticos.add(new CompilerException.TokenInesperadoException(
-                            "IDENTIFICADOR", tokenAtual.getToken(), tokenAtual.getLexema(),
-                            tokenAtual.getLinha(), tokenAtual.getColunaInicial()
-                    ));
-                    sincronizar(FOLLOW_DECL_VAR);
-                    return noDeclaracoes;
-                }
-            }
-
-            matchEAdiciona("PONTOVIRGULA", noTipo);
-
-            // "pendura" este bloco de tipo no nó principal de declarações
-            noDeclaracoes.addFilho(noTipo);
+            return noListaLinha;
         }
 
-        // Se por algum motivo o nó estiver vazio, devolvemos null para manter a árvore limpa
-        return noDeclaracoes.getFilhos().isEmpty() ? null : noDeclaracoes;
-    }
-
-    private void parseListaIdentificadores() {
-        if (tokenAtual.getToken().equals("IDENTIFICADOR")) {
-            match("IDENTIFICADOR");
-        } else {
-            listaErrosSintaticos.add(new CompilerException.TokenInesperadoException(
-                    "IDENTIFICADOR",
-                    tokenAtual.getToken(),
-                    tokenAtual.getLexema(),
-                    tokenAtual.getLinha(),
-                    tokenAtual.getColunaInicial()
-            ));
-            // Se nem o primeiro ID veio certo, sincroniza e aborta a lista
-            sincronizar(FOLLOW_LISTA_ID);
-            return;
-        }
-
-        while (tokenAtual.getToken().equals("VIRGULA")) {
-            match("VIRGULA");
-
-            if (tokenAtual.getToken().equals("IDENTIFICADOR")) {
-                match("IDENTIFICADOR");
-            } else {
-                listaErrosSintaticos.add(new CompilerException.TokenInesperadoException(
-                        "IDENTIFICADOR",
-                        tokenAtual.getToken(),
-                        tokenAtual.getLexema(),
-                        tokenAtual.getLinha(),
-                        tokenAtual.getColunaInicial()
-                ));
-                Set<String> syncSet = new HashSet<>(FOLLOW_LISTA_ID);
-                syncSet.add("VIRGULA");
-                sincronizar(syncSet);
-            }
-        }
+        return null; // epsilon
     }
 
     // <comando> ::= <comando_atribuicao> | <comando_leitura> | <comando_escrita>
