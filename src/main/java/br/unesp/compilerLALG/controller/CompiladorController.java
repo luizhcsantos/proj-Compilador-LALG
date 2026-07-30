@@ -56,16 +56,16 @@ public class CompiladorController {
             response.setArvoreSintatica(parser.getRaizArvore());
         }
 
-        AnalisadorSemantico semantico = new AnalisadorSemantico();
-        semantico.analisar(parser.getRaizArvore());
-        response.setErros(semantico.getErrosSemanticos().stream().toList());
-
-        if (!semantico.getErrosSemanticos().isEmpty()) {
-            // Retornar os erros Semânticos para o frontend
-            for(String erro : semantico.getErrosSemanticos()) {
-                System.out.println(erro);
-            }
-        }
+//        AnalisadorSemantico semantico = new AnalisadorSemantico();
+//        semantico.analisar(parser.getRaizArvore());
+//        response.setErros(semantico.getErrosSemanticos().stream().toList());
+//
+//        if (!semantico.getErrosSemanticos().isEmpty()) {
+//            // Retornar os erros Semânticos para o frontend
+//            for(String erro : semantico.getErrosSemanticos()) {
+//                System.out.println(erro);
+//            }
+//        }
 
         return ResponseEntity.ok(response);
 
