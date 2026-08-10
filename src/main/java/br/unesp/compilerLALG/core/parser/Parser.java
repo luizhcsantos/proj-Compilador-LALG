@@ -205,10 +205,10 @@ public class Parser {
 
         raizArvore = new noArvore("programa", "");
 
-        //raizArvore.addFilho(new noArvore("terminal", "program"));
         matchEAdiciona("PROGRAM", raizArvore);
 
-        noArvore noId = new noArvore("identificador", "identificador", tokenAtual.getLinha());
+        String nomePrograma = tokenAtual.getLexema();
+        noArvore noId = new noArvore("identificador", nomePrograma);
         raizArvore.addFilho(noId);
         matchEAdiciona("IDENTIFICADOR", noId);
 
@@ -217,9 +217,7 @@ public class Parser {
 
         if (FIRST_BLOCO.contains(tokenAtual.getToken())) {
             noArvore noBloco = parseBloco();
-            if (noBloco != null) {
-                raizArvore.addFilho(noBloco);
-            }
+            raizArvore.addFilho(noBloco);
         } else {
             listaErrosSintaticos.add(new CompilerException.TokenInesperadoException(
                     "Início de bloco válido",
@@ -231,7 +229,7 @@ public class Parser {
             sincronizar(FOLLOW_BLOCO);
         }
 
-        raizArvore.addFilho(new noArvore("terminal", "."));
+        //raizArvore.addFilho(new noArvore("terminal", "."));
         matchEAdiciona("PONTO", raizArvore);
     }
 
@@ -377,7 +375,7 @@ public class Parser {
     // <seção parâmetros formais> ::= var <lista identificadores> : <identificador>
     private noArvore parseSecaoParametrosFormais() {
 
-        noArvore noSecao = new noArvore("seção parâmetros formais", "");
+        noArvore noSecao = new noArvore("seção parametros formais", "");
 
         if (!FIRST_SECAO_PARAM.contains(tokenAtual.getToken())) {
             listaErrosSintaticos.add(new CompilerException.TokenInesperadoException(
@@ -413,9 +411,7 @@ public class Parser {
         // <declaração de variáveis>
         if (FIRST_DECL_VAR.contains(tokenAtual.getToken())) {
             noArvore declaracoesVars = parseDeclaracaoVariaveis();
-            if (declaracoesVars != null) {
-                noParte.addFilho(declaracoesVars);
-            }
+            noParte.addFilho(declaracoesVars);
 
             // ;
             if (tokenAtual.getToken().equals("PONTOVIRGULA")) {
@@ -479,7 +475,7 @@ public class Parser {
         noArvore noListaIds = new noArvore("lista de identificadores", "");
         // <identificador>
         if (tokenAtual.getToken().equalsIgnoreCase("IDENTIFICADOR")) {
-            noArvore noVAr = new noArvore("variavel", tokenAtual.getLexema(), tokenAtual.getLinha());
+            noArvore noVAr = new noArvore("variável", tokenAtual.getLexema(), tokenAtual.getLinha());
             noListaIds.addFilho(noVAr);
             matchEAdiciona("IDENTIFICADOR", noVAr);
         } else {
@@ -628,7 +624,8 @@ public class Parser {
        noArvore noComando = new noArvore("comando", "");
 
        if(tokenAtual.getToken().equalsIgnoreCase("IDENTIFICADOR")){
-           noArvore noId = new  noArvore("identificador", "");
+           String nomeReal = tokenAtual.getLexema();
+           noArvore noId = new  noArvore("identificador", nomeReal);
            noComando.addFilho(noId);
            matchEAdiciona("IDENTIFICADOR", noId);
        }
@@ -937,7 +934,10 @@ public class Parser {
     }
 
     private noArvore parseVariavel() {
-        noArvore noVar = new noArvore("variavel", "");
+
+
+        String nomeVariavel = tokenAtual.getLexema();
+        noArvore noVar = new noArvore("variável", nomeVariavel);
         //noVar.addFilho(new noArvore("Id", tokenAtual.getLexema(), tokenAtual.getLinha()));
         matchEAdiciona("IDENTIFICADOR", noVar);
 

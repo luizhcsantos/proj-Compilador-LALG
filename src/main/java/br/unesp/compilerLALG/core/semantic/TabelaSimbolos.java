@@ -1,9 +1,7 @@
 package br.unesp.compilerLALG.core.semantic;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class TabelaSimbolos {
 
@@ -71,4 +69,13 @@ public class TabelaSimbolos {
     public Deque<Map<String, Simbolo>> getPilhaEscopos() {
         return pilhaEscopos;
     }
+
+    public List<Simbolo> getTodosSimbolos() {
+
+        return pilhaEscopos.
+                stream()
+                .flatMap(mapaEscopo -> mapaEscopo.values().stream())
+                .collect(Collectors.toList());
+    }
+
 }

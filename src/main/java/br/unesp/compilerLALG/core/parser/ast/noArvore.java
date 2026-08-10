@@ -7,7 +7,7 @@ public class noArvore {
 
     private String nome;
     private String valor;
-    private int linha;
+    private final int linha;
     private List<noArvore> filhos = new ArrayList<>();
 
     public noArvore(String nome, String valor, int linha) {

@@ -101,6 +101,37 @@
           />
         </div>
 
+        <div v-show="visaoAtiva === 'visao-simbolos'" class="tabela-container">
+          <table class="sua-tabela-de-estilos">
+            <thead>
+            <tr>
+              <th>Nome / Lexema</th>
+              <th>Tipo</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            <tr v-for="(simbolo, index) in tabelaSimbolos" :key="index">
+
+              <td>{{ simbolo.nome }}</td>
+              <td>{{ simbolo.tipo }}</td>
+              <td>{{simbolo.categoria}}</td>
+              <td>{{simbolo.valor}}</td>
+              <td>{{simbolo.escopo}}</td>
+              <td>{{simbolo.linha}}</td>
+              <td>{{simbolo.usada}}</td>
+
+            </tr>
+
+            <tr v-if="tabelaSimbolos.length === 0">
+              <td colspan="2" style="text-align: center; color: var(--texto-cinza);">
+                A tabela de símbolos está vazia.
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+
         <div v-show="visaoAtiva === 'visao-lexemas'" class="tabela-container">
           <table>
             <thead>
@@ -171,7 +202,7 @@
           </div>
         </div>
 
-      </div>
+      </div> <!-- main-display-area -->
 
       <div class="console-panel" :class="{ 'console-minimizado': !consoleAberto }">
 
@@ -240,10 +271,13 @@ const logs = ref(['Aguardando compilação...']);
 const listaTokens = ref([]);
 const consoleArea = ref(null);
 
+const tabelaSimbolos = ref([]);
+
 const arvoreCompleta = ref(null);
 const nosDaArvore = ref([]);
 const linhasDaArvore = ref([]);
 const totalNos = ref(0);
+const listaErros = ref([]);
 
 const modoPassoPasso = ref(false);
 const passoAtual = ref(0);
@@ -360,33 +394,45 @@ async function compilar() {
 
     if (dados.sucesso) {
 
-      erros.value = []
+      listaErros.value = []
       logs.value.push("✅ Compilação finalizada com sucesso!")
       listaTokens.value = dados.tokens || []
       logs.value.push("✅ Análise léxica concluída com sucesso!")
+      logs.value.push("✅ Análise semântica concluída com sucesso!")
       mudarVisao('visao-lexemas')
 
-      console.log(arvoreCompleta);
+      tabelaSimbolos.value = dados.tabelaSimbolos || []
+
       arvoreCompleta.value = dados.arvoreSintatica;
       modoPassoPasso.value = false;
 
       processarArvore(dados.arvoreSintatica)
       // mudarVisao('visao-arvore')  // Abre a aba da arvore automaticamente
+
     } else {
       erros.value = dados.erros || []
       logs.value.push("❌ Erros encontrados durante a compilação.")
       nosDaArvore.value = []
       linhasDaArvore.value = []
       totalNos.value = 0
-      mudarAba('tab-erros') // Abre a aba de erros automaticamente
+      tabelaSimbolos.value = []
+      // mudarAba('tab-erros') // Abre a aba de erros automaticamente
+
     }
   } catch (error) {
-    logs.value.push("❌ Erro fatal: Não foi possível conectar ao backend (Spring Boot).")
+    logs.value.push("❌ Erro na requisição de compilação: " + error.message)
     mudarAba('tab-logs')
   }
 }
 
 function processarArvore(noRaiz) {
+  if (!noRaiz) {
+    nosDaArvore.value = []
+    linhasDaArvore.value = []
+    totalNos.value = 0
+    return
+  }
+
   let nodes = []
   let edges = []
   let idContador = 1
@@ -422,7 +468,7 @@ function processarArvore(noRaiz) {
             source: meuId,
             target: infoFilho.id,
             type: 'smoothstep',
-            style: {strokeWidth: 2, stroke: '#000'}
+            style: {strokeWidth: 2, stroke: '#94a3b8'}
           });
         }
       });
@@ -435,8 +481,12 @@ function processarArvore(noRaiz) {
       }
     }
 
+    // --- Definição dos Rótulos (Labels) ---
     let nodeStyle = {};
     let nodeLAbel = '';
+
+    // Pega o valor real ou usa o nome como fallback se o valor for vazio
+    let valorDisponivel = (no.valor && no.valor.trim() !== '') ? no.valor : no.nome
 
     if (no.nome === 'terminal') {
       nodeLAbel = no.valor;
@@ -451,7 +501,7 @@ function processarArvore(noRaiz) {
         fontSize: '12px'
       };
     } else if (ehTerminal) {
-      nodeLAbel = no.valor || no.nome;
+      nodeLAbel = valorDisponivel;
       nodeStyle = {
         backgroundColor: '#fef08a',
         color: '#854d0e',
@@ -463,11 +513,11 @@ function processarArvore(noRaiz) {
         fontSize: '14px'
       };
     } else {
-      // Estilo para as Regras Gramaticais (Não-Terminais)
+      // Regras Não-Terminais da Gramática
       nodeLAbel = `<${no.nome}>`;
       nodeStyle = {
-        backgroundColor: '#e0e7ff', // Azul muito claro
-        color: '#1e40af',           // Azul escuro
+        backgroundColor: '#e0e7ff',
+        color: '#1e40af',
         fontWeight: 'bold',
         borderRadius: '4px',
         border: '1px solid #93c5fd',
@@ -489,6 +539,7 @@ function processarArvore(noRaiz) {
   }
   console.log(noRaiz);
   calcularPosicoes(noRaiz, 0);
+
   nosDaArvore.value = nodes;
   linhasDaArvore.value = edges;
   totalNos.value = nodes.length;
@@ -1068,7 +1119,6 @@ button {
   display: none;
 
   max-height: 250px;
-  overflow-y: auto;
   overflow-x: hidden;
 }
 
@@ -1232,7 +1282,7 @@ th {
 /* Container padrão da árvore */
 .arvore-container {
   position: relative;
-  height: 100%;
+  height: 600px;
   border: 1px solid var(--borda);
   border-radius: 12px;
   overflow: hidden;
