@@ -120,6 +120,7 @@
               <td>{{simbolo.escopo}}</td>
               <td>{{simbolo.linha}}</td>
               <td>{{simbolo.usada}}</td>
+              <td>{{simbolo.deslocamento}}</td>
 
             </tr>
 

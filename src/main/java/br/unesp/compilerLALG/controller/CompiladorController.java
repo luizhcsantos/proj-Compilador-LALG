@@ -66,9 +66,12 @@ public class CompiladorController {
         AnalisadorSemantico semantico = new AnalisadorSemantico();
         semantico.analisar(raiz);
         TabelaSimbolos tabela = semantico.getTabelaSimbolos();
+        System.out.println(tabela.getNivelLexicoAtual());
 
         for (Simbolo tabelaSimbolos : tabela.getTodosSimbolos()) {
-            System.out.println("Nome: " + tabelaSimbolos.getSimbolo() + ", Tipo: " + tabelaSimbolos.getTipo() + ", Escopo: " + tabelaSimbolos.getEscopo());
+            System.out.println("Nome: " + tabelaSimbolos.getSimbolo() + ", Tipo: " + tabelaSimbolos.getTipo()
+                    + ", Escopo: " + tabelaSimbolos.getNivelLexico() + ", Categoria: " + tabelaSimbolos.getCategoria()
+                    + ", Linha: " + tabelaSimbolos.getLinhaDeclaracao() + ", Usada: " + tabelaSimbolos.isUsada());
         }
 
         response.setErros(semantico.getErrosSemanticos().stream().toList());

@@ -1,81 +1,104 @@
 package br.unesp.compilerLALG.core.semantic;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class TabelaSimbolos {
 
-    private final Deque<Map<String, Simbolo>> pilhaEscopos = new ArrayDeque<>();
-    private int nivelLexicoAtual = 0;
-    private String escopoAtual = "global";
+    // O topo da pilha (último elemento inserido) é o escopo atual -mais interno.
+    private final Deque<Map<String, Simbolo>> pilhaEscopos;
+
+    // Ajuda a saber a profundidade do escopo atual
+    // 0 = Global, 1 = Local de um procedimento, etc
+    private int nivelLexicoAtual;
 
     public TabelaSimbolos() {
-        entrarEScopo("global");
+        this.pilhaEscopos = new ArrayDeque<>();
+        this.nivelLexicoAtual = -1;
     }
 
-    public void entrarEScopo(String nomeEscopo) {
-        pilhaEscopos.push(new HashMap<>());
-        this.escopoAtual = nomeEscopo;
-        this.nivelLexicoAtual = pilhaEscopos.size() - 1;
+    /**
+     * 1. Entrar num Novo Escopo
+     * Chamado ao entrar no programa principal ou em procedimentos.
+     */
+    public void entrarEscopo() {
+        // LinkedHashMap preserva a ordem exata em que as variáveis foram declaradas
+        pilhaEscopos.push(new LinkedHashMap<>());
+        nivelLexicoAtual++;
     }
 
+    /**
+     * 2. Sair do Escopo Atual
+     * Chamado ao encontrar o 'end' de um procedimento. Destrói as variáveis locais.
+     */
     public void sairEscopo() {
-
-        if (pilhaEscopos.size() > 1) {
-            for (Map<String, Simbolo> escopo : pilhaEscopos) {
-                for (Simbolo simbolo : escopo.values()) {
-                    if (!simbolo.isUsada()) {
-                        System.out.println("Aviso: a variável '" + simbolo.getSimbolo()+ "' foi declarada no escopo mas nunca foi usada\"");
-                    }
-                }
-            }
+        if (!pilhaEscopos.isEmpty()) {
             pilhaEscopos.pop();
-            this.nivelLexicoAtual = pilhaEscopos.size() - 1;
-            this.escopoAtual = pilhaEscopos.isEmpty() ? "global" : "escopo_" + nivelLexicoAtual;
-        }
-
-    }
-
-    public void adicionarSimbolo(Simbolo simbolo) throws Exception {
-
-        Map<String, Simbolo> escopoTopo =  pilhaEscopos.peek();
-
-        if (escopoTopo != null) {
-            if (escopoTopo.containsKey(simbolo.getSimbolo())) {
-                throw new Exception("Erro: a variável '" + simbolo.getSimbolo() + "' já foi declarada no escopo atual.");
-            } else {
-                escopoTopo.put(simbolo.getSimbolo(), simbolo);
-            }
+            nivelLexicoAtual--;
         }
     }
 
-    public Simbolo buscarSimbolo(String simbolo) {
+    /**
+     * 3. Inserir um Símbolo no Escopo Atual
+     * Retorna false se o identificador já existir NESTE mesmo escopo (Erro de redeclaração).
+     */
+    public boolean inserir(String nome, String tipo, String categoria, int linha) {
+        if (pilhaEscopos.isEmpty()) {
+            entrarEscopo(); // garante que existe pelo menos o escopo global
+        }
+
+        Map<String, Simbolo> escopoAtual = pilhaEscopos.peek(); // Pega a Tabela do topo da pilha
+
+        // Não pode declarar duas variáveis com o mesmo nome no MESMO escopo
+        if (escopoAtual.containsKey(nome)) {
+            return false;
+        }
+
+        // O deslocamento é quantos símbolos já existem neste escopo
+        int deslocamento = escopoAtual.size();
+        // Instancia o símbolo já com o nível léxico atual
+        Simbolo novoSimbolo = new Simbolo(nome, tipo, categoria, linha, nivelLexicoAtual, false, deslocamento);
+        escopoAtual.put(nome, novoSimbolo);
+        return true;
+    }
+
+    /**
+     * 4. Buscar Símbolo (Regra de Sobrescrita de Escopo)
+     * Procura do escopo mais interno (Local) para o mais externo (Global).
+     */
+    public Simbolo buscar(String nome) {
+        // A pilha itera naturalmente do Topo (Local) para a Base (Global)
         for (Map<String, Simbolo> escopo : pilhaEscopos) {
-            if (escopo.containsKey(simbolo)) {
-                return escopo.get(simbolo);
+            if (escopo.containsKey(nome)) {
+                return escopo.get(nome);
             }
         }
-        return null;
+        return null; // Não existe em nenhum escopo ativo
     }
 
-    public int getNivelLexicoAtual() {
-        return nivelLexicoAtual;
-    }
+    /**
+     * Achatar todos os símbolos numa lista única
+     */
+    public List<Simbolo> getTodosSimbolos() {
+        List<Simbolo> listaFlat = new ArrayList<>();
 
-    public String getEscopoAtual() {
-        return escopoAtual;
+        // Itera do Global) para o Local, para a tabela aparecer na ordem certa na tela
+        Iterator<Map<String, Simbolo>> iterador = pilhaEscopos.descendingIterator();
+        while (iterador.hasNext()) {
+            listaFlat.addAll(iterador.next().values());
+        }
+
+        return listaFlat;
     }
 
     public Deque<Map<String, Simbolo>> getPilhaEscopos() {
         return pilhaEscopos;
     }
 
-    public List<Simbolo> getTodosSimbolos() {
-
-        return pilhaEscopos.
-                stream()
-                .flatMap(mapaEscopo -> mapaEscopo.values().stream())
-                .collect(Collectors.toList());
+    public int getNivelLexicoAtual() {
+        return nivelLexicoAtual;
     }
 
+    public int getEscopoAtual() {
+        return nivelLexicoAtual;
+    }
 }
