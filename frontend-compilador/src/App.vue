@@ -105,8 +105,13 @@
           <table class="sua-tabela-de-estilos">
             <thead>
             <tr>
-              <th>Nome / Lexema</th>
+              <th>Nome</th>
               <th>Tipo</th>
+              <th>Categoria</th>
+              <th>Escopo</th>
+              <th>Linha</th>
+              <th>Usada</th>
+              <th>Valor</th>
             </tr>
             </thead>
 
@@ -116,10 +121,13 @@
               <td>{{ simbolo.nome }}</td>
               <td>{{ simbolo.tipo }}</td>
               <td>{{simbolo.categoria}}</td>
-              <td>{{simbolo.valor}}</td>
-              <td>{{simbolo.escopo}}</td>
-              <td>{{simbolo.linha}}</td>
-              <td>{{simbolo.usada}}</td>
+              <td>{{ simbolo.escopo !== undefined ? simbolo.escopo : simbolo.nivelLexico }}</td>
+              <td>{{ simbolo.linhaDeclaracao || simbolo.linha }}</td>
+              <td>
+          <span :style="{ color: simbolo.usada ? '#22c55e' : '#ef4444', fontWeight: 'bold' }">
+            {{ simbolo.usada ? 'true' : 'false' }}
+          </span>
+              </td>
               <td>{{simbolo.deslocamento}}</td>
 
             </tr>

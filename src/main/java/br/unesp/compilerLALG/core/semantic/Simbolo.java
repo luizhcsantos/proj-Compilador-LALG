@@ -3,7 +3,7 @@ package br.unesp.compilerLALG.core.semantic;
 public class Simbolo {
 
     private String nome;
-    private String tipo;      // Ex: "int", "real", "boolean"
+    private String tipo;      // Ex: "int", "boolean"
     private String categoria; // Ex: "variavel", "procedimento", "parametro"
     private int linhaDeclaracao;
     private int escopo;
@@ -23,7 +23,6 @@ public class Simbolo {
         this.deslocamento = deslocamento;
     }
 
-    // Getters
     public String getNome() {
         return nome;
     }
@@ -48,15 +47,14 @@ public class Simbolo {
         return usada;
     }
 
-    public Simbolo getSimbolo() {
-        return this;
-    } // Retorna o próprio objeto Simbolo
-
     public int getDeslocamento() {
         return deslocamento;
     }
 
-    // Setters (se necessário)
+    public String getEscopo() {
+        return nivelLexico == 0 ? "Global" : "Local (" + nivelLexico + ")";
+    }
+
     public void setNome(String nome) {
         this.nome = nome;
     }
