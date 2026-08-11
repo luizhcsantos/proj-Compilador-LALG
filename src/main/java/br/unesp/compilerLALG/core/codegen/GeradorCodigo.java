@@ -76,11 +76,11 @@ public class GeradorCodigo {
     private void gerarAtribuicao(noArvore no) {
         if (no.getFilhos().size() < 2) return;
 
-        // 1. O lado esquerdo é a variável que vai receber o valor
+        //O lado esquerdo é a variável que vai receber o valor
         noArvore noEsq = no.getFilhos().get(0);
         String nomeVar = extrairNomeLexema(noEsq);
 
-        // 2. O lado direito é a expressão matemática a ser resolvida
+        // O lado direito é a expressão matemática a ser resolvida
         noArvore noDir = no.getFilhos().get(no.getFilhos().size() - 1);
 
         // Resolve a matemática (isto vai deixar o resultado no topo da pilha da MEPA)
@@ -134,7 +134,7 @@ public class GeradorCodigo {
         String nome = no.getNome().toLowerCase().trim();
         String lexema = extrairNomeLexema(no);
 
-        // 1. Caso Base: Se for um Número Puro (Gera CRCT)
+        // Caso Base: Se for um Número Puro (Gera CRCT)
         if (nome.equals("número") || nome.equals("numero") || isNumeric(lexema)) {
             if (!lexema.isEmpty() && !isOperadorLexema(null, lexema)) {
                 instrucoesMEPA.add("CRCT " + lexema);
@@ -142,7 +142,7 @@ public class GeradorCodigo {
             }
         }
 
-        // 2. Caso Base: Se for uma Variável (Gera CRVL)
+        // Caso Base: Se for uma Variável (Gera CRVL)
         if (nome.equals("identificador") || nome.equals("variável") || nome.equals("variavel")) {
             if (!lexema.isEmpty() && !isOperadorLexema(null, lexema)) {
                 Simbolo sim = tabelaSimbolos.buscar(lexema);
@@ -153,9 +153,9 @@ public class GeradorCodigo {
             }
         }
 
-        // 3. Se este nó for um Operador Matemático isolado
+        // Se este nó for um Operador Matemático isolado
         if (isOperadorLexema(null, lexema)) {
-            // Se porventura a árvore guardar o operador no próprio nó atual
+            // Se a árvore guardar o operador no próprio nó atual
             List<noArvore> filhos = no.getFilhos();
             if (filhos != null && filhos.size() >= 2) {
                 gerarExpressao(filhos.get(0)); // Esquerda
@@ -165,11 +165,11 @@ public class GeradorCodigo {
             return;
         }
 
-        // 4. Se for um nó composto (Expressão, Termo, Fator, Atribuição)
+        // Se for um nó composto (Expressão, Termo, Fator, Atribuição)
         List<noArvore> filhos = no.getFilhos();
         if (filhos == null || filhos.isEmpty()) return;
 
-        // Se tivermos exatamente 3 filhos estruturais (ex: [Esquerda, Operador, Direita])
+        // Se tiver exatamente 3 filhos estruturais (ex: [Esquerda, Operador, Direita])
         if (filhos.size() == 3) {
             noArvore esq = filhos.get(0);
             noArvore op = filhos.get(1);
@@ -178,16 +178,16 @@ public class GeradorCodigo {
             String aux = extrairNomeLexema(op);
 
             if (isOperador(op) || isOperadorLexema(null, aux)) {
-                gerarExpressao(esq); // Gera código para a esquerda (ex: CRVL 5)
-                gerarExpressao(dir); // Gera código para a direita (ex: CRVL 6)
-                gerarInstrucaoOperador(op); // Emite a operação (ex: SOMA)
+                gerarExpressao(esq); // Gera código para a esquerda
+                gerarExpressao(dir); // Gera código para a direita
+                gerarInstrucaoOperador(op); // Emite a operação
                 return;
             }
         }
 
-        // 5. Caso geral: Varre todos os filhos recursivamente acumulando a expressão
+        // Caso geral: Varre todos os filhos recursivamente acumulando a expressão
         for (noArvore filho : filhos) {
-            // Se o filho for diretamente um operador, tratamo-lo de forma especial
+            // Se o filho for diretamente um operador, é tratado de forma especial
             if (isOperador(filho)) {
                 gerarInstrucaoOperador(filho);
             } else {
@@ -211,7 +211,7 @@ public class GeradorCodigo {
         }
     }
 
-    // Escava a Árvore e devolve uma lista pura (sem nós estruturais "expressão", "termo", etc)
+    // Escava a Árvore e devolve uma lista pura (sem nós "expressão", "termo", etc)
     private List<noArvore> achatarExpressao(noArvore no) {
         List<noArvore> listaPlana = new ArrayList<>();
         if (no == null) return listaPlana;
@@ -220,7 +220,7 @@ public class GeradorCodigo {
 
         // Se este nó já é um dado final (numero, var ou operador)
         if (isNumeric(lexema) || isOperadorLexema(null, lexema) || (!lexema.isEmpty() && !REGRAS_ESTRUTURAIS.contains(lexema.toLowerCase()))) {
-            // Ignora parênteses puros se o seu parser os gerar como nós independentes
+
             if (!lexema.equals("(") && !lexema.equals(")")) {
                 listaPlana.add(no);
             }
@@ -247,7 +247,6 @@ public class GeradorCodigo {
         }
     }
 
-    // --- UTILITÁRIOS ---
 
     private int contarVariaveis(noArvore no) {
         int count = 0;
@@ -295,7 +294,6 @@ public class GeradorCodigo {
         return null;
     }
 
-    // Identifica números de forma à prova de falhas
     private boolean isNumeric(String str) {
         if (str == null || str.isEmpty()) return false;
         return str.matches("-?\\d+(\\.\\d+)?");
