@@ -39,6 +39,8 @@ public class Simbolo {
         return linhaDeclaracao;
     }
 
+    public int getLinha() { return linhaDeclaracao;  } // simbolo.linha
+
     public int getNivelLexico() {
         return nivelLexico;
     }
@@ -52,7 +54,7 @@ public class Simbolo {
     }
 
     public String getEscopo() {
-        return nivelLexico == 0 ? "Global" : "Local (" + nivelLexico + ")";
+        return nivelLexico == 0 ? "Global (0)" : "Local (" + nivelLexico + ")";
     }
 
     public void setNome(String nome) {

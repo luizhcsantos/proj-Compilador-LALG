@@ -102,7 +102,7 @@
         </div>
 
         <div v-show="visaoAtiva === 'visao-simbolos'" class="tabela-container">
-          <table class="sua-tabela-de-estilos">
+          <table class="tabela-de-estilos">
             <thead>
             <tr>
               <th>Nome</th>
@@ -111,29 +111,49 @@
               <th>Escopo</th>
               <th>Linha</th>
               <th>Usada</th>
-              <th>Valor</th>
+              <th>DEslocamento</th>
             </tr>
             </thead>
 
             <tbody>
             <tr v-for="(simbolo, index) in tabelaSimbolos" :key="index">
 
-              <td>{{ simbolo.nome }}</td>
-              <td>{{ simbolo.tipo }}</td>
-              <td>{{simbolo.categoria}}</td>
-              <td>{{ simbolo.escopo !== undefined ? simbolo.escopo : simbolo.nivelLexico }}</td>
-              <td>{{ simbolo.linhaDeclaracao || simbolo.linha }}</td>
+              <td style="font-weight: bold; color: var(--texto-destaque, #38bdf8);">
+                {{ simbolo.nome }}
+              </td>
+
               <td>
-          <span :style="{ color: simbolo.usada ? '#22c55e' : '#ef4444', fontWeight: 'bold' }">
-            {{ simbolo.usada ? 'true' : 'false' }}
+          <span v-if="simbolo.categoria === 'referencia' || simbolo.categoria === 'chamada'"
+                style="color: #c084fc; font-style: italic;">
+            {{ simbolo.categoria }}
+          </span>
+                <span v-else-if="simbolo.categoria === 'nome_prog'"
+                      style="color: #facc15; font-weight: 600;">
+            {{ simbolo.categoria }}
+          </span>
+                <span v-else>
+            {{ simbolo.categoria }}
           </span>
               </td>
-              <td>{{simbolo.deslocamento}}</td>
+
+              <td>{{ simbolo.tipo || '-' }}</td>
+
+              <td>{{ simbolo.escopo || (simbolo.nivelLexico === 0 ? 'Global (0)' : 'Local (' + simbolo.nivelLexico + ')') }}</td>
+
+              <td>{{ simbolo.linhaDeclaracao > 0 ? simbolo.linhaDeclaracao : (simbolo.linha > 0 ? simbolo.linha : '-') }}</td>
+
+              <td style="font-family: monospace;">{{ simbolo.deslocamento }}</td>
+
+              <td>
+          <span :style="{ color: simbolo.usada ? '#22c55e' : '#ef4444', fontWeight: 'bold' }">
+            {{ simbolo.usada ? 'S' : 'N' }}
+          </span>
+              </td>
 
             </tr>
 
-            <tr v-if="tabelaSimbolos.length === 0">
-              <td colspan="2" style="text-align: center; color: var(--texto-cinza);">
+            <tr v-if="!tabelaSimbolos || tabelaSimbolos.length === 0">
+              <td colspan="7" style="text-align: center; color: var(--texto-cinza, #9ca3af); padding: 1.5rem;">
                 A tabela de símbolos está vazia.
               </td>
             </tr>

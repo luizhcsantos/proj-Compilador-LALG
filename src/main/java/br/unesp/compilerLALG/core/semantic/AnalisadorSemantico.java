@@ -11,20 +11,31 @@ public class AnalisadorSemantico {
     private final List<String> errosSemanticos;
     private final List<String> warnings;
 
+    private static final java.util.Set<String> PALAVRAS_RESERVADAS_E_REGRAS = java.util.Set.of(
+            "identificador", "identificadores", "variável", "variavel", "terminal",
+            "procedure", "procedimento", "program", "programa", "declaração",
+            "declaracao", "sub-rotina", "subrotina", "int", "integer", "boolean",
+            "real", "begin", "end", "if", "then", "else", "while", "do", "read", "write", ";"
+    );
+
     public AnalisadorSemantico() {
         this.tabelaSimbolos = new TabelaSimbolos();
         this.errosSemanticos = new ArrayList<>();
         this.warnings = new ArrayList<>();
+
     }
 
     public void analisar(noArvore raizArvore) {
         if (raizArvore == null) return;
 
         tabelaSimbolos.entrarEscopo();
-        visitar(raizArvore);
 
-        //verificarUsoIdentificador(raizArvore); // Verifica se todos os identificadores foram declarados
-        //tabelaSimbolos.sairEscopo();
+        tabelaSimbolos.inserir("read", "procedure", "procedimento", 0);
+        tabelaSimbolos.inserir("write", "procedure", "procedimento", 0);
+        tabelaSimbolos.inserir("true", "boolean", "constante", 0);
+        tabelaSimbolos.inserir("false", "boolean", "constante", 0);
+
+        visitar(raizArvore);
 
     }
 
@@ -35,10 +46,20 @@ public class AnalisadorSemantico {
         //System.out.println("Visitação do nó: " + no.getNome() + " com valor: " + no.getValor() + " na linha: " + no.getLinha());
 
         switch (no.getNome()) {
+            case "programa":
+                // regista o nome do programa na Tabela para não dar erroo
+                noArvore idProg = buscarNoPorNome(no, "identificador");
+                String nomeProg = extrairNomeLexema(idProg != null ? idProg : no);
+                if (!nomeProg.isEmpty()) {
+                    tabelaSimbolos.inserir(nomeProg, "programa", "nome_prog", no.getLinha());
+                }
+                break;
             //case "parte declaração variáveis":
             case "declaração variáveis":
                 registrarVariaveisTabela(no);
                 return;
+            case "declaração de sub-rotina":
+            case "declaração sub-rotina":
             case "declaração procedimento":
             case "procedure":
                 processarDeclaracaoProcedimento(no);
@@ -58,9 +79,28 @@ public class AnalisadorSemantico {
             case "chamada procedimento":
                 validarChamadaProcedimento(no);
                 return;
+            case "identificador":
+            case "variável":
+                String nomeVar = obterNomeReal(no);
+                if (nomeVar.isEmpty()) return;
+
+                Simbolo sim = tabelaSimbolos.buscar(nomeVar);
+                if (sim == null) {
+                    int linhaErro = no.getLinha() > 0 ? no.getLinha() : (!no.getFilhos().isEmpty() ? no.getFilhos().get(0).getLinha() : -1);
+                    errosSemanticos.add("Linha " + linhaErro + " -> Erro Semântico: Variável ou Procedimento '" + nomeVar + "' não declarado!");
+                    return;
+                }
+
+                sim.setUsada(true);
+                int linhaReal = no.getLinha() > 0 ? no.getLinha() : (!no.getFilhos().isEmpty() ? no.getFilhos().get(0).getLinha() : -1);
+                tabelaSimbolos.inserirReferencia(nomeVar, linhaReal);
+                return;
             case "read":
             case "write":
-                // Desce nos filhos apenas para verificar se as variáveis impressas/lidas existem
+                int linhaRW = no.getLinha() > 0 ? no.getLinha() : (!no.getFilhos().isEmpty() ? no.getFilhos().get(0).getLinha() : -1);
+                tabelaSimbolos.inserirReferencia(no.getNome(), linhaRW);
+
+                // desce nos filhos para avaliar as variáveis passadas nos parênteses
                 for (noArvore f : no.getFilhos()) {
                     inferirTipoExpressao(f);
                 }
@@ -106,20 +146,20 @@ public class AnalisadorSemantico {
         if (no == null) return;
 
         if (no.getNome().equalsIgnoreCase("variável") || no.getNome().equalsIgnoreCase("identificador")) {
-            String nomeVar = no.getValor();
-            System.out.println(nomeVar);
-            if (nomeVar == null || nomeVar.trim().isEmpty()) {
-                if (!no.getFilhos().isEmpty()) {
-                    nomeVar = no.getFilhos().get(0).getValor();
-                }
-            }
+            String nomeVar = extrairNomeLexema(no);
+//            if (!nomeVar.trim().isEmpty()) {
+//                if (!no.getFilhos().isEmpty()) {
+//                    nomeVar = no.getFilhos().get(0).getValor();
+//                }
+//            }
 
-            if (nomeVar != null && !nomeVar.trim().isEmpty()) {
-                int linhaReal = no.getLinha();
-                if (linhaReal <= 0 && !no.getFilhos().isEmpty()) {
-                    linhaReal = no.getFilhos().get(0).getLinha();
-                }
+            if (!nomeVar.trim().isEmpty()) {
+                //int linhaReal = no.getLinha();
+//                if (linhaReal <= 0 && !no.getFilhos().isEmpty()) {
+//                    linhaReal = no.getFilhos().get(0).getLinha();
+//                }
 
+                int linhaReal = no.getLinha() > 0 ? no.getLinha() : -1;
                 tabelaSimbolos.inserir(nomeVar, tipo, "variavel", linhaReal);
             }
         }
@@ -134,42 +174,75 @@ public class AnalisadorSemantico {
      * REGRA 2: Escopo e Procedimentos (Variáveis Locais)
      */
     private void processarDeclaracaoProcedimento(noArvore no) {
-        String nomeProc = "";
+
+
         noArvore noId = buscarNoPorNome(no, "identificador");
+        String nomeProc = noId != null ? extrairNomeLexema(noId) : extrairNomeLexema(no);
 
-        if (noId != null) {
-            nomeProc = noId.getValor();
-            if (nomeProc == null || nomeProc.trim().isEmpty() && !noId.getFilhos().isEmpty()) {
-                nomeProc = noId.getFilhos().get(0).getValor();
-            }
-        }
+        if (nomeProc.isEmpty()) return; // Se não conseguir extrair o nome do procedimento, ignora
 
-        // Insere o procedimento na Tabela Global
-        if (!nomeProc.isEmpty()) {
-            tabelaSimbolos.inserir(nomeProc, "procedure", "procedimento", no.getLinha());
-        }
+        int linhaReal = no.getLinha() > 0 ? no.getLinha() : (noId != null && noId.getLinha() > 0 ? noId.getLinha() : 1);
 
-        // Abre um NOVO ESCOPO
+        // insere o procedimento na tabela global com o nome correto
+        tabelaSimbolos.inserir(nomeProc, "procedure", "procedimento", linhaReal);
+
+        // abre o escopo local da subrotina (nivel 1)
         tabelaSimbolos.entrarEscopo();
 
-        // Verifica os Parâmetros Formais
         noArvore parametros = buscarNoPorNome(no, "parâmetros formais");
         if (parametros == null) parametros = buscarNoPorNome(no, "lista de parâmetros");
+        if (parametros == null) parametros = buscarNoPorNome(no, "seção de parâmetros formais");
 
         if (parametros != null) {
             registrarVariaveisTabela(parametros);
         }
 
-        // 4. Analisa o corpo do procedimento
+        // analisa o corpo do procedimento
         for (noArvore filho : no.getFilhos()) {
-            if (!filho.getNome().equalsIgnoreCase("identificador") &&
-                    !filho.getNome().contains("parâmetros")) {
+            String nomeFilho = filho.getNome().toLowerCase();
+            if (!nomeFilho.equalsIgnoreCase("identificador") &&
+                    !filho.getNome().contains("parâmetros") &&
+                    !nomeFilho.contains("parametros")) {
                 visitar(filho);
             }
         }
 
-        // 5. Fecha o escopo (Destrói as variáveis locais e volta pro global)
         tabelaSimbolos.sairEscopo();
+
+//        if (noId != null) {
+//            nomeProc = noId.getValor();
+//            if (nomeProc == null || nomeProc.trim().isEmpty() && !noId.getFilhos().isEmpty()) {
+//                nomeProc = noId.getFilhos().get(0).getValor();
+//            }
+//        }
+//
+//        // Insere o procedimento na Tabela Global
+//        if (!nomeProc.isEmpty()) {
+//            int linhaReal = noId != null ? noId.getLinha() : no.getLinha();
+//            tabelaSimbolos.inserir(nomeProc, "procedure", "procedimento", linhaReal);
+//        }
+//
+//        // Abre um NOVO ESCOPO
+//        tabelaSimbolos.entrarEscopo();
+//
+//        // Verifica os Parâmetros Formais
+//        noArvore parametros = buscarNoPorNome(no, "parâmetros formais");
+//        if (parametros == null) parametros = buscarNoPorNome(no, "lista de parâmetros");
+//
+//        if (parametros != null) {
+//            registrarVariaveisTabela(parametros);
+//        }
+//
+//        // 4. Analisa o corpo do procedimento
+//        for (noArvore filho : no.getFilhos()) {
+//            if (!filho.getNome().equalsIgnoreCase("identificador") &&
+//                    !filho.getNome().contains("parâmetros")) {
+//                visitar(filho);
+//            }
+//        }
+//
+//        // 5. Fecha o escopo (Destrói as variáveis locais e volta pro global)
+//        tabelaSimbolos.sairEscopo();
     }
 
     /**
@@ -190,21 +263,8 @@ public class AnalisadorSemantico {
             if (tipoVar.equals("int") && tipoExp.equals("real")) {
                 errosSemanticos.add("Linha " + no.getLinha() + " -> Erro Semântico: Atribuição inválida. Uma variável 'int' não pode receber um valor 'real'.");
             } else if (!tipoVar.equals(tipoExp) && !(tipoVar.equals("real") && tipoExp.equals("int"))) {
-                errosSemanticos.add("Linha " + no.getLinha() + " -> Erro Semântico: Tipos incompatíveis na atribuição. Não é possível atribuir '" + tipoExp + "' a '" + tipoVar + "'.");
-            } else {
-                // Extrai o texto do lado direito e atualiza o símbolo
-                String nomeVar = noLadoEsquerdo.getValor();
-                if ((nomeVar == null || nomeVar.trim().isEmpty()) && !noLadoEsquerdo.getFilhos().isEmpty()) {
-                    nomeVar = noLadoEsquerdo.getFilhos().get(0).getValor();
-                }
-
-                if (nomeVar != null && !nomeVar.trim().isEmpty()) {
-                    Simbolo sim = tabelaSimbolos.buscar(nomeVar);
-                    if (sim != null) {
-                        String valorTexto = reconstruirExpressaoTexto(noLadoDireito);
-                        sim.setValor(valorTexto);
-                    }
-                }
+                errosSemanticos.add("Linha " + no.getLinha() + " -> Erro Semântico: Tipos incompatíveis na atribuição. Não é possível atribuir '"
+                        + tipoExp + "' a '" + tipoVar + "'.");
             }
         }
     }
@@ -306,17 +366,19 @@ public class AnalisadorSemantico {
 
             case "identificador":
             case "variável":
-                String nomeVar = no.getValor();
+                String nomeVar = extrairNomeLexema(no);
 
-                if (nomeVar == null || nomeVar.trim().isEmpty()) {
-                    if (!no.getFilhos().isEmpty()) {
-                        nomeVar = no.getFilhos().get(0).getValor();
-                    }
-                }
+                if (nomeVar.isEmpty()) return "ignorar";
 
-                if (nomeVar == null || nomeVar.trim().isEmpty()) {
-                    return "ignorar";
-                }
+//                if (nomeVar.trim().isEmpty()) {
+//                    if (!no.getFilhos().isEmpty()) {
+//                        nomeVar = no.getFilhos().get(0).getValor();
+//                    }
+//                }
+//
+//                if (nomeVar == null || nomeVar.trim().isEmpty()) {
+//                    return "ignorar";
+//                }
 
                 Simbolo sim = tabelaSimbolos.buscar(nomeVar);
                 if (sim == null) {
@@ -330,6 +392,9 @@ public class AnalisadorSemantico {
                     return "desconhecido";
                 }
                 sim.setUsada(true);
+
+                int linhaReal = no.getLinha() > 0 ? no.getLinha() : (!no.getFilhos().isEmpty() ? no.getFilhos().get(0).getLinha() : -1);
+                tabelaSimbolos.inserirReferencia(nomeVar, linhaReal);
 
                 return sim.getTipo();
         }
@@ -346,23 +411,26 @@ public class AnalisadorSemantico {
     }
 
     private void validarChamadaProcedimento(noArvore no) {
-        String nomeProc = "";
         noArvore noId = buscarNoPorNome(no, "identificador");
+        String nomeProc = noId != null ? extrairNomeLexema(noId) : extrairNomeLexema(no);
 
-        if (noId != null) {
-            nomeProc = noId.getValor();
-            if (nomeProc == null || nomeProc.trim().isEmpty() && !noId.getFilhos().isEmpty()) {
-                nomeProc = noId.getFilhos().get(0).getValor();
-            }
-        }
+        if (nomeProc.isEmpty()) return;
 
         Simbolo proc = tabelaSimbolos.buscar(nomeProc);
         if (proc == null) {
-            errosSemanticos.add("Linha " + no.getLinha() + " -> Erro Semântico: O procedimento '" + nomeProc + "' não foi declarado ou não existe neste escopo.");
+            int linhaErro = no.getLinha() > 0 ? no.getLinha() : -1;
+            errosSemanticos.add("Linha " + linhaErro + " -> Erro Semântico: Procedimento '" + nomeProc + "' não declarado.");
             return;
         }
 
-        // Faz com que as expressões de argumento passadas sejam visitadas e checadas
+        // marca que o procedimento foi efetivamente utilizado no código
+        proc.setUsada(true);
+
+        // registra a referencia da chamada do procedimento
+        int linhaChamada = no.getLinha() > 0 ? no.getLinha() : (noId != null ? noId.getLinha() : -1);
+        tabelaSimbolos.inserirReferencia(nomeProc, linhaChamada);
+
+        // valida as variáveis que o utilizador passou dentro dos parênteses
         noArvore listaExp = buscarNoPorNome(no, "lista de expressões");
         if (listaExp != null) {
             for (noArvore exp : listaExp.getFilhos()) {
@@ -387,42 +455,69 @@ public class AnalisadorSemantico {
         return false;
     }
 
-    private String reconstruirExpressaoTexto(noArvore no) {
+    // extrai nomes de variáveis/procedimentos
+    private String obterNomeReal(noArvore no) {
         if (no == null) return "";
 
-        if (no.getValor() != null && !no.getValor().trim().isEmpty()) {
-            return no.getValor();
+        // tenta pegar o valor do próprio nó
+        String valor = no.getValor();
+
+        // se o valor existir e não for uma etiqueta estrutural do Parser, achamos o nome
+        if (valor != null && !valor.trim().isEmpty() &&
+                !valor.equalsIgnoreCase("identificador") &&
+                !valor.equalsIgnoreCase("variável") &&
+                !valor.equalsIgnoreCase("variavel") &&
+                !valor.equalsIgnoreCase("procedure") &&
+                !valor.equalsIgnoreCase("terminal")) {
+
+            return valor.trim();
         }
 
-        StringBuilder sb = new StringBuilder();
+        // se o valor era apenas "lixo sintático",
+        // varre todos os filhos à procura da verdadeira palavra (ex: "soma")
         for (noArvore filho : no.getFilhos()) {
-            String textoFilho = reconstruirExpressaoTexto(filho);
-            if (!textoFilho.isEmpty()) {
-                if (sb.length() > 0 && !textoFilho.equals(";") && !textoFilho.equals(")")) {
-                    sb.append(" ");
-                }
-                sb.append(textoFilho);
+            String valorFilho = obterNomeReal(filho);
+            if (!valorFilho.isEmpty()) {
+                return valorFilho; // Retorna a primeira palavra real que encontrar!
             }
         }
-        return sb.toString();
+
+        return "";
     }
 
-//    private void verificarUsoIdentificador(noArvore noId) {
-//        String nome = noId.getValor();
-//        int linha = noId.getLinha();
-//
-//        if ((noId.getNome().equalsIgnoreCase("variável") || noId.getNome().equalsIgnoreCase("variavel")) && !noId.getFilhos().isEmpty()) {
-//            nome = noId.getFilhos().get(0).getValor();
-//            linha = noId.getFilhos().get(0).getLinha();
-//        }
-//
-//        Simbolo s = tabelaSimbolos.buscar(nome);
-//        if (s == null) {
-//            errosSemanticos.add("Linha " + linha + " -> Erro Semântico: Identificador '" + nome + "' não declarado.");
-//        } else {
-//            s.setUsada(true);
-//        }
-//    }
+    private String extrairNomeLexema(noArvore no) {
+        if (no == null) return "";
+
+        // testa se o valor do nó atual é um lexema válido
+        String val = no.getValor();
+        if (val != null && !val.trim().isEmpty()) {
+            String valTrim = val.trim();
+            if (!PALAVRAS_RESERVADAS_E_REGRAS.contains(valTrim.toLowerCase())) {
+                return valTrim;
+            }
+        }
+
+        // testa se o nome do nó é um lexema válido (caso o Parser tenha salvo no nome)
+        String nome = no.getNome();
+        if (nome != null && !nome.trim().isEmpty()) {
+            String nomeTrim = nome.trim();
+            if (!PALAVRAS_RESERVADAS_E_REGRAS.contains(nomeTrim.toLowerCase())) {
+                return nomeTrim;
+            }
+        }
+
+        // se for nó estrutural (ex: "identificador"), percorre os filhos recursivamente
+        if (no.getFilhos() != null) {
+            for (noArvore filho : no.getFilhos()) {
+                String lexemaFilho = extrairNomeLexema(filho);
+                if (!lexemaFilho.isEmpty()) {
+                    return lexemaFilho;
+                }
+            }
+        }
+
+        return "";
+    }
 
     public List<String> getErrosSemanticos() {
         return errosSemanticos;

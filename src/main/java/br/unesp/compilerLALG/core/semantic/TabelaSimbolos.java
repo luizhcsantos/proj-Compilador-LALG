@@ -6,13 +6,16 @@ public class TabelaSimbolos {
 
     // O topo da pilha (último elemento inserido) é o escopo atual -mais interno.
     private final Deque<Map<String, Simbolo>> pilhaEscopos;
-
+    private final List<Simbolo> listaHistoricoSimbolos; // Mantém o histórico completo para a tabela visual
     // Ajuda a saber a profundidade do escopo atual
     // 0 = Global, 1 = Local de um procedimento, etc
     private int nivelLexicoAtual;
 
+
+
     public TabelaSimbolos() {
         this.pilhaEscopos = new ArrayDeque<>();
+        this.listaHistoricoSimbolos = new ArrayList<>();
         this.nivelLexicoAtual = -1;
     }
 
@@ -57,6 +60,8 @@ public class TabelaSimbolos {
         int deslocamento = escopoAtual.size();
         // Instancia o símbolo já com o nível léxico atual
         Simbolo novoSimbolo = new Simbolo(nome, tipo, categoria, linha, nivelLexicoAtual, false, deslocamento);
+
+        listaHistoricoSimbolos.add(novoSimbolo);
         escopoAtual.put(nome, novoSimbolo);
         return true;
     }
@@ -78,7 +83,7 @@ public class TabelaSimbolos {
     /**
      * Achatar todos os símbolos numa lista única
      */
-    public List<Simbolo> getTodosSimbolos() {
+    public List<Simbolo> getTodosSimbolosFlat() {
         List<Simbolo> listaFlat = new ArrayList<>();
 
         // Itera do Global) para o Local, para a tabela aparecer na ordem certa na tela
@@ -88,6 +93,29 @@ public class TabelaSimbolos {
         }
 
         return listaFlat;
+    }
+
+    /**
+     * Regista uma CHAMADA ou USO de variável/procedimento.
+     */
+    public void inserirReferencia(String nome, int linha) {
+        Simbolo declarado = buscar(nome);
+        if (declarado == null) return;
+
+        // Previne duplicatas exatas (mesma variável na mesma linha) na visualização
+        if (!listaHistoricoSimbolos.isEmpty()) {
+            Simbolo ultimo = listaHistoricoSimbolos.get(listaHistoricoSimbolos.size() - 1);
+            if (ultimo.getNome().equals(nome) && ultimo.getLinhaDeclaracao() == linha) {
+                return;
+            }
+        }
+
+        // Se for um procedimento, exibe 'chamada'. Se for variável, exibe 'referencia'.
+        String catVisual = declarado.getCategoria().equals("procedimento") ? "chamada" : "referencia";
+
+        Simbolo ref = new Simbolo(nome, declarado.getTipo(), catVisual, linha, nivelLexicoAtual, true, declarado.getDeslocamento());
+
+        listaHistoricoSimbolos.add(ref); // Envia para o Vue.js!
     }
 
     public Deque<Map<String, Simbolo>> getPilhaEscopos() {
@@ -100,5 +128,10 @@ public class TabelaSimbolos {
 
     public int getEscopoAtual() {
         return nivelLexicoAtual;
+    }
+
+    public List<Simbolo> getTodosSimbolos() {
+        // Envia o HISTÓRICO COMPLETO (com as referências de chamadas) para o Vue.js!
+        return this.listaHistoricoSimbolos;
     }
 }

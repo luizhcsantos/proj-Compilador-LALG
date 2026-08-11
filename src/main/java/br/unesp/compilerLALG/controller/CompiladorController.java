@@ -74,7 +74,7 @@ public class CompiladorController {
 //        }
 
         response.setErros(semantico.getErrosSemanticos().stream().toList());
-        response.setTabelaSimbolos(tabela.getTodosSimbolos());
+        response.setTabelaSimbolos(semantico.getTabelaSimbolos().getTodosSimbolos());
 
         if (!semantico.getErrosSemanticos().isEmpty()) {
             for(String erro : semantico.getErrosSemanticos()) {
