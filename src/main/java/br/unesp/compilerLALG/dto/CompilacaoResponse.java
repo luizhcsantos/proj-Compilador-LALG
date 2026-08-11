@@ -14,6 +14,7 @@ public class CompilacaoResponse {
     private List<String> erros;
     private noArvore arvoreSintatica;
     private List<Simbolo> tabelaSimbolos;
+    private List<String> codigoGerado;
 
     public CompilacaoResponse() {
     }
@@ -31,6 +32,7 @@ public class CompilacaoResponse {
     public List<String> getErros() { return erros; }
     public noArvore getArvoreSintatica() { return arvoreSintatica; }
     public List<Simbolo> getTabelaSimbolos() { return tabelaSimbolos; }
+    public List<String> getCodigoGerado() { return codigoGerado; }
 
     public void setSucesso(boolean sucesso) { this.sucesso = sucesso; }
     public void setMensagem(String mensagem) { this.mensagem = mensagem; }
@@ -38,4 +40,5 @@ public class CompilacaoResponse {
     public void setErros(List<String> erros) { this.erros = erros; }
     public void setArvoreSintatica(noArvore arvoreSintatica) { this.arvoreSintatica = arvoreSintatica; }
     public void setTabelaSimbolos(List<Simbolo> tabelaSimbolos) { this.tabelaSimbolos = tabelaSimbolos; }
+    public void setCodigoGerado(List<String> codigoGerado) { this.codigoGerado = codigoGerado; }
 }

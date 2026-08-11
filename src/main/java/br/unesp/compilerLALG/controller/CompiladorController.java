@@ -1,5 +1,6 @@
 package br.unesp.compilerLALG.controller;
 
+import br.unesp.compilerLALG.core.codegen.GeradorCodigo;
 import br.unesp.compilerLALG.core.lexer.Lexer;
 import br.unesp.compilerLALG.core.lexer.Token;
 import br.unesp.compilerLALG.core.parser.Parser;
@@ -65,22 +66,23 @@ public class CompiladorController {
 
         AnalisadorSemantico semantico = new AnalisadorSemantico();
         semantico.analisar(raiz);
-        TabelaSimbolos tabela = semantico.getTabelaSimbolos();
-
-//        for (Simbolo tabelaSimbolos : tabela.getTodosSimbolos()) {
-//            System.out.println("Nome: " + tabelaSimbolos.getSimbolo() + ", Tipo: " + tabelaSimbolos.getTipo()
-//                    + ", Escopo: " + tabelaSimbolos.getNivelLexico() + ", Categoria: " + tabelaSimbolos.getCategoria()
-//                    + ", Linha: " + tabelaSimbolos.getLinhaDeclaracao() + ", Usada: " + tabelaSimbolos.isUsada());
-//        }
-
         response.setErros(semantico.getErrosSemanticos().stream().toList());
         response.setTabelaSimbolos(semantico.getTabelaSimbolos().getTodosSimbolos());
 
         if (!semantico.getErrosSemanticos().isEmpty()) {
             for(String erro : semantico.getErrosSemanticos()) {
+                response.getErros().add(erro);
                 System.out.println(erro);
             }
         }
+
+        GeradorCodigo gerador = new GeradorCodigo(semantico.getTabelaSimbolos());
+        List<String> instrucoesMEPA = gerador.gerar(raiz);
+        System.out.println("=== INÍCIO DO CÓDIGO MEPA ===");
+        for (String instrucao : instrucoesMEPA) {
+            System.out.println(instrucao);
+        }
+        response.setCodigoGerado(instrucoesMEPA);
 
         return ResponseEntity.ok(response);
 
