@@ -2,13 +2,16 @@ package br.unesp.compilerLALG.controller;
 
 import br.unesp.compilerLALG.core.lexer.Lexer;
 import br.unesp.compilerLALG.core.lexer.Token;
+import br.unesp.compilerLALG.core.parser.GramaticaLALG;
 import br.unesp.compilerLALG.core.parser.Parser;
+import br.unesp.compilerLALG.core.parser.TabelaSintatica;
 import br.unesp.compilerLALG.dto.CompilacaoRequest;
 import br.unesp.compilerLALG.dto.CompilacaoResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
@@ -55,6 +58,14 @@ public class CompiladorController {
 
         return ResponseEntity.ok(response);
 
+
+    }
+
+
+    @GetMapping("/tabela-sintatica")
+    public Map<String, Map<String, List<String>>> obterTabelaSintatica() {
+        TabelaSintatica ts = GramaticaLALG.criarTabela();
+        return ts.getTabela();
 
     }
 }

@@ -52,14 +52,50 @@
         </div>
       </div>
 
-      <div class="card card-clickable" :class="{ destaque: visaoAtiva === 'visao-arvore' }"
-           @click="mudarVisao('visao-arvore')">
-        <div class="card-header">
-          <div class="card-icon" style="background: #a5d688;">🧩</div>
-          Sintática (AST)
+      <div class="row-cards">
+        <div class="card card-clickable" :class="{ destaque: visaoAtiva === 'visao-arvore' }"
+             @click="mudarVisao('visao-arvore')">
+          <div class="card-header">
+            <div class="card-icon" style="background: #a5d688;">🧩</div>
+            Sintática (AST)
+          </div>
+          <div class="card-number">{{ totalNos }} <span class="card-label">nós</span></div>
         </div>
-        <div class="card-number">{{ totalNos }} <span class="card-label">nós</span></div>
+
+        <div class="card card-clickable" :class="{ destaque: visaoAtiva === 'visao-tabela-ll1' }"
+             @click="mudarVisao('visao-tabela-ll1')">
+          <div class="card-header" style="font-size: 14px;">
+            <div class="card-icon" style="background: #38bdf8;">📊</div>
+            Tabela LL(1)
+          </div>
+          <div class="card-number" style="font-size: 18px;">Matriz preditiva</div>
+        </div>
       </div>
+
+      <div class="section-title">Geração de código</div>
+      <div class="row-cards">
+
+        <div class="card card-clickable" :class="{ destaque: visaoAtiva === 'visao-codigo' }"
+             @click="mudarVisao('visao-codigo')">
+          <div class="card-header">
+            <div class="card-icon" style="background: #fbbf24;">⚙️</div>
+            Geração de código
+          </div>
+          <div class="card-number" style="font-size: 16px;">Bytecode <span class="card-label"></span></div>
+        </div>
+
+        <div class="card card-clickable" :class="{ destaque: visaoAtiva === 'visao-mepa' }"
+             @click="mudarVisao('visao-mepa')">
+          <div class="card-header">
+            <div class="card-icon" style="background: #f43f5e;">💻</div>
+            MEPA
+          </div>
+          <div class="card-number" style="font-size: 16px;">Simulador de pilha</div>
+        </div>
+
+      </div>
+
+
 
     </div>
 
@@ -168,6 +204,34 @@
           </div>
         </div>
 
+        <div v-show="visaoAtiva === 'visao-tabela-ll1'" class="tabela-container" style="height: 100%; overflow: auto; background: white; padding: 15px; border-radius: 12px; border: 1px solid var(--borda);">
+          <h3 style="margin-bottom: 15px; color: #1e293b;">Matriz de Análise Preditiva LL(1)</h3>
+          <div class="scroll-wrapper" style="overflow-x: auto; max-height: 100%;">
+            <table class="tabela-ll1" style="width: 100%; border-collapse: collapse; white-space: nowrap; font-size: 13px;">
+              <thead>
+              <tr>
+                <th class="celula-fixa" style="background: #1e293b; color: white; padding: 8px; border: 1px solid #cbd5e1; position: sticky; left: 0; z-index: 10;">Não-Terminal \ Terminal</th>
+                <th v-for="terminal in colunasTerminais" :key="terminal" style="background: #1e293b; color: #38bdf8; padding: 8px; border: 1px solid #cbd5e1; font-family: monospace;">
+                  {{ terminal }}
+                </th>
+              </tr>
+              </thead>
+              <tbody>
+              <tr v-for="nt in linhasNaoTerminais" :key="nt">
+                <td class="celula-fixa non-terminal" style="background: #f1f5f9; font-weight: bold; padding: 8px; border: 1px solid #cbd5e1; position: sticky; left: 0; z-index: 5; text-align: right;">{{ nt }}</td>
+                <td v-for="terminal in colunasTerminais" :key="terminal"
+                    :style="{ background: !matrizSintatica[nt]?.[terminal] ? '#fafafa' : '#dcfce7', color: !matrizSintatica[nt]?.[terminal] ? '#cbd5e1' : '#166534', padding: '8px', border: '1px solid #cbd5e1', textAlign: 'center' }">
+              <span v-if="matrizSintatica[nt]?.[terminal]">
+                {{ formatarRegraTabela(nt, matrizSintatica[nt][terminal]) }}
+              </span>
+                  <span v-else>-</span>
+                </td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
 
       <div class="console-panel" :class="{ 'console-minimizado': !consoleAberto }">
@@ -248,6 +312,12 @@ const totalPAssos = ref(0);
 const consoleAberto = ref(true);
 const arvoreMaximizada = ref(false);
 const inputArquivoEscondido = ref(null);
+
+const matrizSintatica = ref({});
+const colunasTerminais = ref([]);
+const linhasNaoTerminais = ref([]);
+
+
 
 // === Funções da interface ===
 function mudarVisao(novaVisao) {
@@ -579,11 +649,47 @@ function atualizarDEsenhoPasso() {
 }
 
 
+// Função para formatar a regra visualmente (ex: <comando> -> if ...)
+function formatarRegra(naoTerminal, producao) {
+  if (!producao) return '';
+  if (producao[0] === 'EPSILON') return `${naoTerminal} → ε`;
+  return `${naoTerminal} → ${producao.join(' ')}`;
+}
+
+function formatarRegraTabela(naoTerminal, producao) {
+  if (!producao) return '';
+  if (producao[0] === 'EPSILON') return `${naoTerminal} → ε`;
+  return `${naoTerminal} → ${producao.join(' ')}`;
+}
+
+async function carregarTabelaSintaticaAPI() {
+  try {
+    const resposta = await fetch('http://localhost:8080/api/tabela-sintatica');
+    const dados = await resposta.json();
+    matrizSintatica.value = dados;
+
+    linhasNaoTerminais.value = Object.keys(dados);
+
+    const setTerminais = new Set();
+    for (const nt in dados) {
+      for (const terminal in dados[nt]) {
+        setTerminais.add(terminal);
+      }
+    }
+    colunasTerminais.value = Array.from(setTerminais);
+  } catch (error) {
+    console.error("Erro ao carregar a tabela sintática:", error);
+  }
+}
+
+
 // Inicializa o tema ao carregar a página
-onMounted(() => {
+onMounted(async () => {
   document.documentElement.setAttribute('data-theme', temaAtual.value)
   atualizarLinhas()
-})
+  carregarTabelaSintaticaAPI();
+
+});
 </script>
 
 <style>
@@ -1219,5 +1325,71 @@ th {
   border-color: #94a3b8;
 }
 
+.tabela-container {
+  margin-top: 2rem;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  padding: 1rem;
+}
+
+.scroll-wrapper {
+  overflow-x: auto; /* Permite rolagem horizontal! */
+  max-height: 500px; /* Limita a altura com rolagem vertical */
+  overflow-y: auto;
+}
+
+.tabela-ll1 {
+  width: 100%;
+  border-collapse: collapse;
+  white-space: nowrap; /* Impede a quebra de texto das regras */
+  font-size: 13px;
+}
+
+.tabela-ll1 th, .tabela-ll1 td {
+  border: 1px solid #e2e8f0;
+  padding: 8px 12px;
+  text-align: center;
+}
+
+.tabela-ll1 thead th {
+  background-color: #1e293b;
+  color: #f8fafc;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.celula-fixa {
+  background-color: #f1f5f9;
+  font-weight: bold;
+  position: sticky;
+  left: 0; /* Trava a primeira coluna na rolagem */
+  z-index: 5;
+  border-right: 2px solid #cbd5e1 !important;
+}
+
+.non-terminal {
+  color: #0f172a;
+  text-align: right !important;
+}
+
+.cabecalho-token {
+  color: #38bdf8;
+  font-family: monospace;
+}
+
+.regra-texto {
+  background-color: #dcfce7;
+  color: #166534;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.celula-vazia {
+  background-color: #fafafa;
+  color: #cbd5e1;
+}
 
 </style>

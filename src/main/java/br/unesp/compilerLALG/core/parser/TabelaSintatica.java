@@ -33,4 +33,8 @@ public class TabelaSintatica {
     public boolean contemRegra(String naoTerminal, String terminal) {
         return obterRegra(naoTerminal, terminal) != null;
     }
+
+    public Map<String, Map<String, List<String>>> getTabela() {
+        return tabela;
+    }
 }
