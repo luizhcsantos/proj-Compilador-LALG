@@ -822,7 +822,7 @@ public class Parser {
         return lista;
     }
 
-    private noArvore expressaoSimples() {
+    private noArvore parseExpressaoSimples() {
 
         noArvore noExpSimples = new noArvore("expressão simples", "");
 
@@ -871,7 +871,7 @@ public class Parser {
 
         noArvore expPai = new noArvore("expressão", "");
 
-        noArvore noEsquerdo = expressaoSimples();
+        noArvore noEsquerdo = parseExpressaoSimples();
         expPai.addFilho(noEsquerdo);
 
         if (FIRST_RELACAO.contains(tokenAtual.getToken())) {
@@ -883,7 +883,7 @@ public class Parser {
 
             matchEAdiciona(tokenDoOperador, noRelacional);
 
-            noArvore noDireito = expressaoSimples();
+            noArvore noDireito = parseExpressaoSimples();
 
             expPai.addFilho(noRelacional);
             expPai.addFilho(noDireito);
