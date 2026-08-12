@@ -88,8 +88,6 @@
       <div class="main-display-area">
 
         <div v-if="visaoAtiva === 'visao-editor'" style="display: flex; height: 100%;" class="editor-container">
-          <!--          <textarea id="codigo-fonte" v-model="codigoFonte" @input="atualizarLinhas" spellcheck="false"-->
-          <!--                    placeholder="Digite seu código LALG aqui..."></textarea>-->
           <codemirror
               v-model="codigoFonte"
               placeholder="Digite seu código LALG aqui..."
@@ -161,7 +159,9 @@
           </div>
 
           <div style="flex: 1; width: 100%; height: 100%; min-height: 0; position: relative;">
-            <VueFlow :nodes="nosDaArvore" :edges="linhasDaArvore" style="width: 100%; height: 100%;">
+            <VueFlow :nodes="nosDaArvore"
+                     :edges="linhasDaArvore"
+                     style="width: 100%; height: 100%;">
               <Background pattern-color="#aaa" gap="8"/>
               <Controls/>
             </VueFlow>
@@ -176,7 +176,7 @@
             style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--borda);">
           <div class="tabs" style="border-bottom: none;">
             <button class="tab" :class="{ active: abaAtiva === 'tab-erros' }" @click="mudarAba('tab-erros')">
-              Erros ({{ erros?.length || 0 }})
+              Erros ({{ listaErros?.length || 0 }})
             </button>
             <button class="tab" :class="{ active: abaAtiva === 'tab-logs' }" @click="mudarAba('tab-logs')">Logs</button>
           </div>
@@ -189,11 +189,11 @@
         <div class="console-body" v-show="consoleAberto">
 
           <div v-show="abaAtiva === 'tab-erros'" class="tab-content active">
-            <div v-if="!erros || erros.length === 0"
+            <div v-if="!listaErros || listaErros.length === 0"
                  style="color: var(--texto-cinza); text-align: center; margin-top: 20px;">Nenhum erro encontrado.
             </div>
             <div v-else>
-              <div v-for="(erro, index) in erros" :key="index" class="log-entry erro">{{ erro }}</div>
+              <div v-for="(erro, index) in listaErros" :key="index" class="log-entry erro">{{ erro }}</div>
             </div>
           </div>
 
@@ -225,14 +225,14 @@ import '@vue-flow/core/dist/theme-default.css'
 
 const extensions = [StreamLanguage.define(pascal)];
 
-const codigoFonte = ref('program ola_mundo;\nint a, b, soma; \nbegin\n   a := 10;\n   b := 5;\n   soma := a + b;\nend.');
+const codigoFonte = ref('program ola_mundo;\nint a, b, soma; \nbegin\n   a := 10;\n   b := 5;\n   soma := a + b\nend.');
 const visaoAtiva = ref('visao-editor'); // Controla a tela principal (editor, lexemas, arvore)
 const abaAtiva = ref('tab-logs');   // Controla o console inferior
 const menuTemaAberto = ref(false);
 const temaAtual = ref('claro');
-const linhasDigitadas = ref(5);
+const linhasDigitadas = ref(0);
 
-const erros = ref([]);
+const listaErros = ref([]);
 const logs = ref(['Aguardando compilação...']);
 const listaTokens = ref([]);
 
@@ -283,7 +283,7 @@ function novoArquivo() {
     //atualizarLinhas()
     nosDaArvore.value = []
     linhasDaArvore.value = []
-    erros.value = []
+    listaErros.value = []
     logs.value = ["Novo arquivo criado."]
   }
 }
@@ -298,7 +298,7 @@ function lerConteudoARquivo(event) {
   leitor.onload = (e) => {
     codigoFonte.value = e.target.result;
 
-    erros.value = [];
+    listaErros.value = [];
     logs.value = [`✅ Arquivo '${arquivo.name}' carregado com sucesso.`];
     atualizarLinhas();
   }
@@ -356,19 +356,19 @@ async function compilar() {
 
     if (dados.sucesso) {
 
-      erros.value = []
+      listaErros.value = []
       logs.value.push("✅ Compilação finalizada com sucesso!")
       listaTokens.value = dados.tokens || []
       logs.value.push("✅ Análise léxica concluída com sucesso!")
       mudarVisao('visao-lexemas')
-
+      linhasDigitadas.value = codigoFonte.value.split('\n').length;
       arvoreCompleta.value = dados.arvoreSintatica;
       modoPassoPasso.value = false;
 
       processarArvore(dados.arvoreSintatica)
       // mudarVisao('visao-arvore')  // Abre a aba da arvore automaticamente
     } else {
-      erros.value = dados.erros || []
+      listaErros.value = dados.erros || []
       logs.value.push("❌ Erros encontrados durante a compilação.")
       nosDaArvore.value = []
       linhasDaArvore.value = []
@@ -382,6 +382,13 @@ async function compilar() {
 }
 
 function processarArvore(noRaiz) {
+  if (!noRaiz) {
+    nosDaArvore.value = []
+    linhasDaArvore.value = []
+    totalNos.value = 0
+    return
+  }
+
   let nodes = []
   let edges = []
   let idContador = 1
@@ -428,30 +435,70 @@ function processarArvore(noRaiz) {
         posicaoFolhaX += 1;
       }
     }
+    // --- Definição dos Rótulos (Labels) ---
+    let nodeStyle = {};
+    let nodeLAbel = '';
+    let simboloDoNo = no.simbolo || 'N/A';
+    // Só utiliza o lexema se ele existir e for diferente do próprio símbolo para evitar duplicação
+    let lexemaDoNo = (no.lexema && no.lexema.trim() !== '' && no.lexema !== simboloDoNo) ? no.lexema : '';
+
+    // Se o símbolo não começar com "<", assume que é um terminal / folha
+    let ehSimboloTerminal = !simboloDoNo.startsWith("<");
+
+    if (simboloDoNo === 'EPSILON') {
+      // Estilo específico para o EPSILON
+      nodeLAbel = 'ε (Vazio)';
+      nodeStyle = {
+        backgroundColor: '#f1f5f9',
+        color: '#94a3b8',
+        border: '1px dashed #cbd5e1',
+        borderRadius: '50%',
+        padding: '10px',
+        textAlign: 'center',
+        fontSize: '12px',
+        width: '80´px',
+      };
+    } else if (ehTerminal || ehSimboloTerminal) {
+      if (lexemaDoNo) {
+        nodeLAbel = `${lexemaDoNo}`;
+      } else {
+        nodeLAbel = simboloDoNo;
+      }
+
+      nodeStyle = {
+        backgroundColor: '#fef08a',
+        color: '#854d0e',
+        fontWeight: 'bold',
+        borderRadius: '8px',
+        border: '2px solid #eab308',
+        padding: '10px 15px',
+        textAlign: 'center',
+        fontSize: '14px'
+      };
+    } else {
+      // Regras Não-Terminais da Gramática (ex: <comando>)
+      nodeLAbel = simboloDoNo;
+      nodeStyle = {
+        backgroundColor: '#e0e7ff',
+        color: '#1e40af',
+        fontWeight: 'bold',
+        borderRadius: '4px',
+        border: '1px solid #93c5fd',
+        padding: '8px 12px',
+        textAlign: 'center',
+        fontSize: '13px',
+        maxWidth: '140px',
+        whiteSpace: 'normal',
+        wordBreak: 'break-word',
+        overflowWrap: 'anywhere'
+      };
+    }
+
     nodes.push({
       id: meuId,
-      // multiplica por um valor fixo em pixels para dar o espaçamento final
-      position: {x: meuX * 180, y: nivelY * 120},
-      data: {label: ehTerminal ? (no.valor || no.nome) : `<${no.nome}>`},
-      style: ehTerminal
-          ? {
-            backgroundColor: '#fef08a',
-            color: '#854d0e',
-            fontWeight: 'bold',
-            borderRadius: '30px',
-            border: '2px solid #eab308',
-            padding: '10px 20px',
-            textAlign: 'center'
-          }
-          : {
-            backgroundColor: '#c084fc',
-            color: 'white',
-            fontWeight: 'bold',
-            borderRadius: '8px',
-            border: '2px solid #9333ea',
-            padding: '10px 20px',
-            textAlign: 'center'
-          }
+      position: {x: meuX * 160, y: nivelY * 130},
+      data: {label: nodeLAbel},
+      style: nodeStyle
     });
 
     return {id: meuId, x: meuX};
@@ -467,7 +514,7 @@ function podarArvore(noOriginal, limitePassos, contador = {atual: 0}) {
 
   if (!noOriginal || contador.atual > limitePassos) return null;
 
-  const noClonado = {nome: noOriginal.nome, valor: noOriginal.valor, filhos: []};
+  const noClonado = {simbolo: noOriginal.simbolo, lexema: noOriginal.lexema, filhos: []};
 
   contador.atual++;
 
@@ -529,63 +576,6 @@ function atualizarDEsenhoPasso() {
   const arvoreParcial = podarArvore(arvoreCompleta.value, passoAtual.value, {atual: 0});
 
   processarArvore(arvoreParcial);
-}
-
-function percorrer(no, idDoPai, nivelX, nivelY) {
-  if (!no) return;
-  let meuId = `node_${idContador++}`
-
-  let ehTerminal = !no.filhos || no.filhos.length === 0;
-
-  nodes.push({
-    id: meuId,
-    position: {x: nivelX * 200, y: nivelY * 120},
-    data: {
-      // Se for folha, mostra o texto real (ex: 'a', ':=', '10')
-      // Se for ramificação, mostra o nome da regra (ex: '<Atribuição>')
-      label: ehTerminal ? (no.valor || no.nome) : `<${no.nome}>`
-    },
-    style: ehTerminal
-        // Estilo dos terminais
-        ? {
-          backgroundColor: '#3a4938',
-          color: '#f81b1b',
-          fontWeight: 'bold',
-          borderRadius: '30px',
-          border: '2px solid #eab308',
-          padding: '10px 20px'
-        }
-        // Estilo dos não-terminais
-        : {
-          backgroundColor: '#a38ec2',
-          color: 'white',
-          fontWeight: 'bold',
-          borderRadius: '8px',
-          border: '2px solid #9333ea',
-          padding: '10px 20px'
-        }
-  })
-
-  if (idDoPai) {
-    edges.push({
-      id: `e_${idDoPai}-${meuId}`,
-      source: idDoPai,
-      target: meuId,
-      type: 'smoothstep',
-      animated: true,
-      style: {strokeWidth: 2, stroke: '#000'},
-    })
-  }
-
-  if (no.filhos && no.filhos.length > 0) {
-
-    let centro = (no.filhos.length - 1) / 2;
-
-    no.filhos.forEach((filho, index) => {
-      let deslocamentoX = (index - centro) * 1.5;
-      percorrer(filho, meuId, nivelX + deslocamentoX, nivelY + 1)
-    })
-  }
 }
 
 

@@ -177,10 +177,10 @@ public class CalculadoraWindow extends JFrame {
             // Percorre a lista de tokens e preenche a Tabela
             for (Token t : tokens) {
                 // Não é neces´sario mostrar o EOF na tabela para o usuário
-                if (t.getToken() != null && !t.getToken().equals("EOF")) {
+                if (t.getTipo() != null && !t.getTipo().equals("EOF")) {
                     Object[] linhaTabela = {
                             t.getLexema(),
-                            "<" + t.getToken() + ">",
+                            "<" + t.getTipo() + ">",
                             t.getLinha(),
                             t.getColunaInicial(),
                             t.getColunaFinal()

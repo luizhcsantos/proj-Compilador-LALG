@@ -3,7 +3,6 @@ package br.unesp.compilerLALG.controller;
 import br.unesp.compilerLALG.core.lexer.Lexer;
 import br.unesp.compilerLALG.core.lexer.Token;
 import br.unesp.compilerLALG.core.parser.Parser;
-import br.unesp.compilerLALG.core.parser.ast.noArvoreDTO;
 import br.unesp.compilerLALG.dto.CompilacaoRequest;
 import br.unesp.compilerLALG.dto.CompilacaoResponse;
 import org.springframework.http.ResponseEntity;
@@ -27,11 +26,9 @@ public class CompiladorController {
             return ResponseEntity.badRequest().body(response);
         }
 
-
         Lexer lexer = new Lexer(request.getCodigo());
         List<Token> tokens = lexer.tokenize();
         response.setSucesso(true);
-
 
 
         if (lexer.temErros()) {

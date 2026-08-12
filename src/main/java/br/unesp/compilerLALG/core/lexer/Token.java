@@ -2,14 +2,14 @@ package br.unesp.compilerLALG.core.lexer;
 
 public class Token {
 
-    private String token;
+    private String tipo;
     private String lexema;
     private int linha;
     private int colunaInicial;
     private int colunaFinal;
 
     public Token(String tipo, String value, int linha, int colunaInicial, int colunaFinal) {
-        this.token = tipo;
+        this.tipo = tipo;
         this.lexema = value;
         this.linha = linha;
         this.colunaInicial = colunaInicial;
@@ -17,16 +17,16 @@ public class Token {
     }
 
     public Token(TipoToken tipoToken, String value) {
-        this.token = tipoToken.name();
+        this.tipo = tipoToken.name();
         this.lexema = value;
     }
 
-    public String getToken() {
-        return token;
+    public String getTipo() {
+        return tipo;
     }
 
-    public void setToken(String token) {
-        this.token = token;
+    public void setTipo(String tipo) {
+        this.tipo = tipo;
     }
 
     public String getLexema() {
@@ -62,10 +62,12 @@ public class Token {
     }
 
     public boolean getType() {
-        return token.equals(TipoToken.NUM.name()) ||
-                token.equals(TipoToken.OPSOMA.name()) ||
-                token.equals(TipoToken.OPSUB.name()) ||
-                token.equals(TipoToken.OPMUL.name()) ||
-                token.equals(TipoToken.OPDIV.name());
+        return tipo.equals(TipoToken.NUM.name()) ||
+                tipo.equals(TipoToken.OPSOMA.name()) ||
+                tipo.equals(TipoToken.OPSUB.name()) ||
+                tipo.equals(TipoToken.OPMUL.name()) ||
+                tipo.equals(TipoToken.OPDIV.name());
     }
+
+
 }

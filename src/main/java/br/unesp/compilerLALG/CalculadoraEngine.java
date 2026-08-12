@@ -20,7 +20,7 @@ public class CalculadoraEngine {
 
            // Parser transforma tokens em AST
            Parser parser = new Parser(tokens);
-           //noArvoreDTO astRaiz = parser.parse();
+           //noArvore astRaiz = parser.parse();
 
            // Evaluator calcula o resultado da AST
 //           evaluator eval = new evaluator();
@@ -37,7 +37,7 @@ public class CalculadoraEngine {
 
     public static class evaluator {
 
-//        public double visit(noArvoreDTO node) {
+//        public double visit(noArvore node) {
 //            if (node instanceof NumNode) {
 //                return ((NumNode) node).getValue();
 //            }
