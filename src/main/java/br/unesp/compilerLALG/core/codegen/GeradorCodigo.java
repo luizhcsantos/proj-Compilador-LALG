@@ -9,26 +9,26 @@ import java.util.List;
 
 public class GeradorCodigo {
 
-    private final List<String> codigoMepa;
+    private final List<String> codigoMepaGerado;
     private final TabelaSimbolos tabelaSimbolos; // Precisamos da tabela para saber os endereços
     private int ponteiroMemoriaLivre; // Controla qual é a próxima gaveta livre na MEPA
     private int contadorRotulos; // Para os IFs e WHILEs (L1, L2, etc)
 
     public GeradorCodigo(TabelaSimbolos tabelaSimbolos) {
-        this.codigoMepa = new ArrayList<>();
+        this.codigoMepaGerado = new ArrayList<>();
         this.tabelaSimbolos = tabelaSimbolos;
         this.ponteiroMemoriaLivre = 0;
         this.contadorRotulos = 1;
     }
 
-    public String getCodigoGerado() {
-        return String.join("\n", codigoMepa);
+    public String getCodigoMepaGerado() {
+        return String.join("\n", codigoMepaGerado);
     }
 
     public void gerar(noArvore raiz) {
-        codigoMepa.add("INPP"); // Inicia o Programa Principal
+        codigoMepaGerado.add("INPP"); // Inicia o Programa Principal
         visitar(raiz);
-        codigoMepa.add("PARA"); // Fim da execução
+        codigoMepaGerado.add("PARA"); // Fim da execução
     }
 
     private void visitar(noArvore no) {
@@ -40,7 +40,7 @@ public class GeradorCodigo {
             List<String> variaveis = extrairIdentificadores(no);
             int quantidade = variaveis.size();
             if (quantidade > 0) {
-                codigoMepa.add("AMEM " + quantidade);
+                codigoMepaGerado.add("AMEM " + quantidade);
                 for (String nomeVar : variaveis) {
                     Simbolo sim = tabelaSimbolos.buscar(nomeVar);
                     if (sim != null && sim.getEnderecoRelativo() == -1) {
@@ -70,19 +70,19 @@ public class GeradorCodigo {
 
                 // depois de a conta estar no topo da pilha, guarda na memória
                 if (sim != null) {
-                    codigoMepa.add("ARMZ " + sim.getEnderecoRelativo());
+                    codigoMepaGerado.add("ARMZ " + sim.getEnderecoRelativo());
                 } else {
                     System.out.println("ERRO INTERNO: Tentou gerar ARMZ para variável não encontrada: " + lexemaCmd);
                 }
                 return;
             }
             else if (lexemaCmd.equals("read")) {
-                codigoMepa.add("LEIT");
+                codigoMepaGerado.add("LEIT");
                 noArvore listaExp = buscarFilho(no, "<lista_de_expressões>");
                 if (listaExp != null) {
                     String nomeVar = extrairLexemaPorSimbolo(listaExp, "identificador");
                     Simbolo sim = tabelaSimbolos.buscar(nomeVar);
-                    if (sim != null) codigoMepa.add("ARMZ " + sim.getEnderecoRelativo());
+                    if (sim != null) codigoMepaGerado.add("ARMZ " + sim.getEnderecoRelativo());
                 }
                 return;
             }
@@ -90,7 +90,7 @@ public class GeradorCodigo {
                 noArvore listaExp = buscarFilho(no, "<lista_de_expressões>");
                 if (listaExp != null) {
                     visitar(listaExp);
-                    codigoMepa.add("IMPR");
+                    codigoMepaGerado.add("IMPR");
                 }
                 return;
             }
@@ -110,21 +110,21 @@ public class GeradorCodigo {
             visitar(expressao);
 
             // se for falso (0), desvia para o bloco ELSE (ou para o FIM se não houver else)
-            codigoMepa.add("DSVF " + rotuloElse);
+            codigoMepaGerado.add("DSVF " + rotuloElse);
 
             // executa o bloco THEN
             visitar(comandoThen);
-            codigoMepa.add("DSVS " + rotuloFim); // Terminou o THEN, salta o ELSE
+            codigoMepaGerado.add("DSVS " + rotuloFim); // Terminou o THEN, salta o ELSE
 
             // executa o bloco ELSE (Se existir)
-            codigoMepa.add(rotuloElse + ": NADA");
+            codigoMepaGerado.add(rotuloElse + ": NADA");
             if (comandoCondicional2 != null && !comandoCondicional2.getFilhos().get(0).getSimbolo().equals("EPSILON")) {
                 noArvore comandoElse = buscarFilho(comandoCondicional2, "<comando>");
                 visitar(comandoElse);
             }
 
             // marca o fim da instrução IF
-            codigoMepa.add(rotuloFim + ": NADA");
+            codigoMepaGerado.add(rotuloFim + ": NADA");
             return;
         }
 
@@ -134,24 +134,24 @@ public class GeradorCodigo {
             String rotuloFim = criarRotulo();
 
             // marca o início do laço de repetição
-            codigoMepa.add(rotuloInicio + ": NADA");
+            codigoMepaGerado.add(rotuloInicio + ": NADA");
 
             // avalia a condição do laço
             noArvore expressao = buscarFilho(no, "<expressão>");
             visitar(expressao);
 
             // se a condição for falsa, sai do laço
-            codigoMepa.add("DSVF " + rotuloFim);
+            codigoMepaGerado.add("DSVF " + rotuloFim);
 
             // executa o interior do WHILE
             noArvore comandoBloco = buscarFilho(no, "<comando>");
             visitar(comandoBloco);
 
             // volta incondicionalmente para o início para testar a condição de novo
-            codigoMepa.add("DSVS " + rotuloInicio);
+            codigoMepaGerado.add("DSVS " + rotuloInicio);
 
             // marca o fim do laço
-            codigoMepa.add(rotuloFim + ": NADA");
+            codigoMepaGerado.add(rotuloFim + ": NADA");
             return;
         }
 
@@ -164,12 +164,12 @@ public class GeradorCodigo {
             String nomeProc = extrairLexemaPorSimbolo(no.getFilhos().get(0), "identificador").toLowerCase();
 
             if (nomeProc.equals("read")) {
-                codigoMepa.add("LEIT");
+                codigoMepaGerado.add("LEIT");
                 noArvore listaExp = buscarFilho(no, "<lista_de_expressões>");
                 if (listaExp != null) {
                     String nomeVar = extrairLexemaPorSimbolo(listaExp, "identificador");
                     Simbolo sim = tabelaSimbolos.buscar(nomeVar);
-                    if (sim != null) codigoMepa.add("ARMZ " + sim.getEnderecoRelativo());
+                    if (sim != null) codigoMepaGerado.add("ARMZ " + sim.getEnderecoRelativo());
                 }
                 return;
             }
@@ -177,7 +177,7 @@ public class GeradorCodigo {
                 noArvore listaExp = buscarFilho(no, "<lista_de_expressões>");
                 if (listaExp != null) {
                     visitar(listaExp); // joga o resultado da conta na pilha
-                    codigoMepa.add("IMPR"); // imprime o topo da pilha
+                    codigoMepaGerado.add("IMPR"); // imprime o topo da pilha
                 }
                 return;
             }
@@ -185,20 +185,20 @@ public class GeradorCodigo {
 
         // expressões e termos
         else if (simbolo.equals("numero")) {
-            codigoMepa.add("CRCT " + no.getLexema()); // carrrega constante no topo da pilha
+            codigoMepaGerado.add("CRCT " + no.getLexema()); // carrrega constante no topo da pilha
             return;
         }
         else if (simbolo.equals("identificador")) {
             // descobre se é true/false ou variável
             String lexema = no.getLexema().toLowerCase();
             if (lexema.equals("true")) {
-                codigoMepa.add("CRCT 1");
+                codigoMepaGerado.add("CRCT 1");
             } else if (lexema.equals("false")) {
-                codigoMepa.add("CRCT 0");
+                codigoMepaGerado.add("CRCT 0");
             } else {
                 Simbolo sim = tabelaSimbolos.buscar(lexema);
                 if (sim != null) {
-                    codigoMepa.add("CRVL " + sim.getEnderecoRelativo()); // carrega valor da memória
+                    codigoMepaGerado.add("CRVL " + sim.getEnderecoRelativo()); // carrega valor da memória
                 }
             }
             return;
@@ -238,19 +238,19 @@ public class GeradorCodigo {
 
     private void gerarInstrucaoOperador(String op) {
         switch (op) {
-            case "+": codigoMepa.add("SOMA"); break;
-            case "-": codigoMepa.add("SUBT"); break;
-            case "*": codigoMepa.add("MULT"); break;
+            case "+": codigoMepaGerado.add("SOMA"); break;
+            case "-": codigoMepaGerado.add("SUBT"); break;
+            case "*": codigoMepaGerado.add("MULT"); break;
             case "div":
-            case "/": codigoMepa.add("DIVI"); break;
-            case ">": codigoMepa.add("CMAI"); break;
-            case "<": codigoMepa.add("CMEN"); break;
-            case "=": codigoMepa.add("CMIG"); break;
-            case ">=": codigoMepa.add("CMAQ"); break;
-            case "<=": codigoMepa.add("CMEQ"); break;
-            case "<>": codigoMepa.add("CDIF"); break;
-            case "and": codigoMepa.add("CONJ"); break;
-            case "or": codigoMepa.add("DISJ"); break;
+            case "/": codigoMepaGerado.add("DIVI"); break;
+            case ">": codigoMepaGerado.add("CMAI"); break;
+            case "<": codigoMepaGerado.add("CMEN"); break;
+            case "=": codigoMepaGerado.add("CMIG"); break;
+            case ">=": codigoMepaGerado.add("CMAQ"); break;
+            case "<=": codigoMepaGerado.add("CMEQ"); break;
+            case "<>": codigoMepaGerado.add("CDIF"); break;
+            case "and": codigoMepaGerado.add("CONJ"); break;
+            case "or": codigoMepaGerado.add("DISJ"); break;
         }
     }
 

@@ -400,6 +400,7 @@ const matrizSintatica = ref({});
 const colunasTerminais = ref([]);
 const linhasNaoTerminais = ref([]);
 
+const codigoMepaGerado = ref([]);
 const instrucoesMepa = ref([]);
 const memoriaMepa = ref([]);    // pilha de dados (M)
 const consoleSaida = ref([]);   // saída do comando IMPR
@@ -407,7 +408,7 @@ const ponteiroInstrucao = ref(0); // instruction pointer (IP)
 const isExecutando = ref(false);  // trava para não rodar várias vezes
 const { fitView } = useVueFlow();
 
-// === Funções da interface ===
+// Funções da interface
 function mudarVisao(novaVisao) {
   visaoAtiva.value = novaVisao
 }
@@ -522,7 +523,7 @@ async function compilar() {
       linhasDigitadas.value = codigoFonte.value.split('\n').length;
       arvoreCompleta.value = dados.arvoreSintatica;
       listaSimbolos.value = dados.tabelaSimbolos || [];
-      codigoMepaGerado.value = dados.codigoMepa || '';
+      codigoMepaGerado.value = dados.codigoMepaGerado || '';
       modoPassoPasso.value = false;
 
       processarArvore(dados.arvoreSintatica)
@@ -547,7 +548,7 @@ function processarArvore(noRaiz) {
     linhasDaArvore.value = []
     setTimeout(() => {
       fitView();
-    }, 100);
+    }, 1000);
     totalNos.value = 0
     return
   }
@@ -806,7 +807,7 @@ function executarProximoPasso() {
   // se a linha for um rótulo ignora a operação e avança
   if (linhaAtual.includes(": NADA")) {
     ponteiroInstrucao.value++;
-    setTimeout(executarProximoPasso, 100);
+    setTimeout(executarProximoPasso, 1000);
     return;
   }
 
@@ -874,7 +875,7 @@ function executarProximoPasso() {
         let indexAlvo = instrucoesMepa.value.findIndex(l => l.startsWith(rotulo + ":"));
         if (indexAlvo !== -1) {
           ponteiroInstrucao.value = indexAlvo; // pula o IP para lá
-          setTimeout(executarProximoPasso, 100);
+          setTimeout(executarProximoPasso, 1000);
           return; // retorna para evitar o IP++ em baixo
         }
       }
@@ -885,7 +886,7 @@ function executarProximoPasso() {
       let indexSalto = instrucoesMepa.value.findIndex(l => l.startsWith(rotuloSalto + ":"));
       if (indexSalto !== -1) {
         ponteiroInstrucao.value = indexSalto;
-        setTimeout(executarProximoPasso, 100);
+        setTimeout(executarProximoPasso, 1000);
         return;
       }
       break;
@@ -905,7 +906,7 @@ function executarProximoPasso() {
   }
 
   ponteiroInstrucao.value++;
-  setTimeout(executarProximoPasso, 100);
+  setTimeout(executarProximoPasso, 1000);
 }
 
 

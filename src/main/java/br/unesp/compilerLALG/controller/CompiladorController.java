@@ -8,7 +8,6 @@ import br.unesp.compilerLALG.core.parser.Parser;
 import br.unesp.compilerLALG.core.parser.TabelaSintatica;
 import br.unesp.compilerLALG.core.parser.ast.noArvore;
 import br.unesp.compilerLALG.core.semantic.AnalisadorSemantico;
-import br.unesp.compilerLALG.core.semantic.TabelaSimbolos;
 import br.unesp.compilerLALG.dto.CompilacaoRequest;
 import br.unesp.compilerLALG.dto.CompilacaoResponse;
 import org.springframework.http.ResponseEntity;
@@ -78,8 +77,8 @@ public class CompiladorController {
         if (todosOsErros.isEmpty() && raiz != null) {
             GeradorCodigo gerador = new GeradorCodigo(semantico.getTabelaSimbolos());
             gerador.gerar(raiz);
-            System.out.println("Codigo MEPA gerado:\n" + gerador.getCodigoGerado());
-            response.setCodigoMEPA(gerador.getCodigoGerado());
+            System.out.println("Codigo MEPA gerado:\n" + gerador.getCodigoMepaGerado());
+            response.setCodigoMepaGerado(gerador.getCodigoMepaGerado());
         }
 
         return ResponseEntity.ok(response);
