@@ -44,13 +44,15 @@ public class Parser {
         int ponteiroToken = 0;
         Token tokenAtual = tokens.get(ponteiroToken);
 
-        System.out.println("DEBUG - Topo da pilha: " + pilha.peek());
-        System.out.println("DEBUG - Primeiro Token [Tipo: '" + tokenAtual.getTipo() + "' | Lexema: '" + tokenAtual.getLexema() + "']");
+//        System.out.println("DEBUG - Topo da pilha: " + pilha.peek());
+//        System.out.println("DEBUG - Primeiro Token [Tipo: '" + tokenAtual.getTipo() + "' | Lexema: '" + tokenAtual.getLexema() + "']");
 
         while (!pilha.isEmpty() && !pilha.peek().getSimbolo().equals("EOF")) {
             noArvore X =pilha.peek();
             String simboloX = X.getSimbolo();
             String a = traduzirToken(tokenAtual); // Tipo do token atual
+
+            //System.out.println("DEBUG - Pilha: " + simboloX + " | Lexer enviou: [Tipo: " + tokenAtual.getTipo() + ", Lexema: '" + tokenAtual.getLexema() + "'] | Traduzido para: " + a);
 
             if (simboloX.startsWith("<") && simboloX.endsWith(">")) {
                 // X é um não-terminal
@@ -100,6 +102,7 @@ public class Parser {
                 if (simboloX.equals(a)) {
                     // guarda o texto digitado dentro da folha da arvore
                     X.setLexema(tokenAtual.getLexema());
+                    X.setLinha(tokenAtual.getLinha());
 
                     pilha.pop(); // Remove o terminal da pilha
                     ponteiroToken++;
@@ -124,7 +127,7 @@ public class Parser {
     }
 
     public boolean temErros() {
-
+        System.out.println("DEBUG: Análise sintática encontrou " + listaErrosSintaticos.size() + " erros.");
         return listaErrosSintaticos.isEmpty();
     }
 

@@ -110,7 +110,7 @@
               type="file"
               ref="inputArquivoEscondido"
               @change="lerConteudoARquivo"
-              accept=".txt, .lalg, .pas"
+              accept=".txt, .lalg, .pas, .fct"
               style="display: none;"
           />
 

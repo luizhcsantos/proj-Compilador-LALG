@@ -11,7 +11,8 @@ public class CompilacaoResponse {
     private String mensagem;
     private List<Token> tokens;
     private List<String> erros;
-    private Object arvoreSintatica;
+    private noArvore arvoreSintatica;
+    private String codigoMEPA;
 
     public CompilacaoResponse() {
     }
@@ -27,11 +28,13 @@ public class CompilacaoResponse {
     public String getMensagem() { return mensagem; }
     public List<Token> getTokens() { return tokens; }
     public List<String> getErros() { return erros; }
-    public Object getArvoreSintatica() { return arvoreSintatica; }
+    public noArvore getArvoreSintatica() { return arvoreSintatica; }
 
     public void setSucesso(boolean sucesso) { this.sucesso = sucesso; }
     public void setMensagem(String mensagem) { this.mensagem = mensagem; }
     public void setTokens(List<Token> tokens) { this.tokens = tokens; }
     public void setErros(List<String> erros) { this.erros = erros; }
     public void setArvoreSintatica(noArvore arvoreSintatica) { this.arvoreSintatica = arvoreSintatica; }
+    public String getCodigoMEPA() { return codigoMEPA; }
+    public void setCodigoMEPA(String codigoMEPA) { this.codigoMEPA = codigoMEPA; }
 }

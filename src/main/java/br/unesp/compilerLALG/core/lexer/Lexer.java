@@ -70,8 +70,8 @@ public class Lexer {
                 }
                 // Se chegou ao fim do arquivo e não achou a chave '}'
                 if (!comentarioFechado) {
-                    throw new CompilerException.ComentarioNaoFechadoException(
-                            linha, colunaInicioComentario);
+                    listaErros.add(new CompilerException.ComentarioNaoFechadoException(
+                            linha, colunaInicioComentario));
                 }
                 continue;
             }
@@ -97,27 +97,28 @@ public class Lexer {
                 if (matcher.find()) {
                     String lexema = matcher.group();
 
-                    if (tipo.name().equals("IDENTIFICADOR") && lexema.length() > 15) {
-                        throw new CompilerException.LimiteExcedidoException(
-                                "identificador", lexema, 10, linha, coluna);
+                    if (tipo.name().equals("IDENTIFICADOR") && lexema.length() > 20) {
+                        listaErros.add(new CompilerException.LimiteExcedidoException(
+                                "identificador", lexema, 20, linha, coluna));
                     }
 
                     if (tipo.name().equals("NUM") && lexema.length() > 10) {
-                        throw new CompilerException.LimiteExcedidoException(
-                                "número", lexema, 10, linha, coluna);
+                        listaErros.add(new CompilerException.LimiteExcedidoException(
+                                "numero", lexema, 10, linha, coluna));
                     }
 
                     if (tipo.name().equals("NUM_REAL")) {
                         String[] partes = lexema.split("\\.");
                         // Verifica a parte inteira
                         if (partes[0].length() > 10) {
-                            throw new CompilerException.LimiteExcedidoException(
-                                    "parte inteira do número", lexema, 10, linha, coluna);
+                            listaErros.add(new CompilerException.LimiteExcedidoException(
+                                    "parte inteira do número", lexema, 10, linha, coluna));
                         }
                         // Verifica a parte decimal
                         if (partes.length > 1 && partes[1].length() > 10) {
-                            throw new CompilerException.LimiteExcedidoException(
-                                    "parte decimal do número", lexema, 10, linha, coluna);
+                            listaErros.add(new CompilerException.LimiteExcedidoException(
+                                    "parte decimal do número", lexema, 10, linha, coluna));
+
                         }
                     }
 

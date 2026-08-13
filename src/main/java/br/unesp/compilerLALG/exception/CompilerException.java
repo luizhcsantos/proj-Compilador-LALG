@@ -81,4 +81,51 @@ public class CompilerException extends RuntimeException {
         }
     }
 
+
+    // Classe base para erros semânticos
+    public static class SemanticException extends CompilerException {
+        public SemanticException(String mensagemEspecifica) {
+            super("Erro Semântico: " + mensagemEspecifica);
+        }
+
+        public SemanticException(String mensagemEspecifica, int linha, int coluna) {
+            super("Erro Semântico: " + mensagemEspecifica + " na linha " + linha + ", coluna " + coluna);
+        }
+    }
+
+    // Variável ou procedure já declarada no mesmo escopo
+    public static class IdentificadorJaDeclaradoException extends SemanticException {
+        public IdentificadorJaDeclaradoException(String lexema) {
+            super("O identificador '" + lexema + "' já foi declarado neste escopo.");
+        }
+    }
+
+    // Uso de variável ou procedure não declarada previamente
+    public static class IdentificadorNaoDeclaradoException extends SemanticException {
+        public IdentificadorNaoDeclaradoException(String lexema) {
+            super("O identificador '" + lexema + "' não foi declarado.");
+        }
+    }
+
+    // Atribuição de tipos diferentes (ex: a := true, onde a é inteiro)
+    public static class TiposIncompativeisException extends SemanticException {
+        public TiposIncompativeisException(String lexema, String tipoEsperado, String tipoEncontrado) {
+            super("Incompatibilidade de tipos na atribuição de '" + lexema + "'. Esperava " + tipoEsperado + ", mas encontrou " + tipoEncontrado + ".");
+        }
+    }
+
+    // IF ou WHILE com expressão matemática ao invés de relacional
+    public static class CondicaoInvalidaException extends SemanticException {
+        public CondicaoInvalidaException(String comando, String tipoEncontrado) {
+            super("A condição do comando " + comando + " deve ser booleana. Tipo encontrado: " + tipoEncontrado + ".");
+        }
+    }
+
+    // Tentar chamar uma variável como se fosse procedure
+    public static class NaoEProcedimentoException extends SemanticException {
+        public NaoEProcedimentoException(String lexema) {
+            super("O identificador '" + lexema + "' não é um procedimento e não pode ser chamado.");
+        }
+    }
+
 }
