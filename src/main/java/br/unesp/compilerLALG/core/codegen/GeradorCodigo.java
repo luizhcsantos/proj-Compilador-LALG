@@ -39,36 +39,61 @@ public class GeradorCodigo {
         if (simbolo.equals("<declaração_de_variáveis>")) {
             List<String> variaveis = extrairIdentificadores(no);
             int quantidade = variaveis.size();
-
-            // Aloca espaço na memória da MEPA
-            codigoMepa.add("AMEM " + quantidade);
-
-            // Guarda o endereço físico de cada variável na Tabela de Símbolos
-            for (String nomeVar : variaveis) {
-                Simbolo sim = tabelaSimbolos.buscar(nomeVar);
-                if (sim != null) {
-                    sim.setEnderecoRelativo(ponteiroMemoriaLivre);
-                    ponteiroMemoriaLivre++;
+            if (quantidade > 0) {
+                codigoMepa.add("AMEM " + quantidade);
+                for (String nomeVar : variaveis) {
+                    Simbolo sim = tabelaSimbolos.buscar(nomeVar);
+                    if (sim != null && sim.getEnderecoRelativo() == -1) {
+                        sim.setEnderecoRelativo(ponteiroMemoriaLivre);
+                        ponteiroMemoriaLivre++;
+                    }
                 }
             }
             return;
         }
 
         // atribuição de variáveis (ARMZ)
-        else if (simbolo.equals("<comando>") && temAtribuicao(no)) {
-            // Lado Esquerdo (A Variável)
-            String nomeVar = no.getFilhos().get(0).getLexema();
-            Simbolo sim = tabelaSimbolos.buscar(nomeVar);
+        else if (simbolo.equals("<comando>")) {
+            if (no.getFilhos().isEmpty()) return;
 
-            // Lado Direito (a conta) -> avalia a expressão primeiro
-            noArvore expressao = buscarExpressao(no);
-            visitar(expressao);
+            String lexemaCmd = extrairLexemaPorSimbolo(no.getFilhos().get(0), "identificador").toLowerCase();
 
-            // O resultado da conta ficou no topo da pilha
-            if (sim != null) {
-                codigoMepa.add("ARMZ " + sim.getEnderecoRelativo());
+            // verifica se tem := do lado direito
+            noArvore noComandoLinha = (no.getFilhos().size() > 1) ? no.getFilhos().get(1) : null;
+            noArvore noAtribuicao = (noComandoLinha != null) ? buscarFilho(noComandoLinha, ":=") : null;
+
+            if (noAtribuicao != null) {
+                Simbolo sim = tabelaSimbolos.buscar(lexemaCmd);
+                noArvore expressao = buscarFilho(noComandoLinha, "<expressão>");
+
+                visitar(expressao); // executa toda a matemática primeiro
+
+                // depois de a conta estar no topo da pilha, guarda na memória
+                if (sim != null) {
+                    codigoMepa.add("ARMZ " + sim.getEnderecoRelativo());
+                } else {
+                    System.out.println("ERRO INTERNO: Tentou gerar ARMZ para variável não encontrada: " + lexemaCmd);
+                }
+                return;
             }
-            return;
+            else if (lexemaCmd.equals("read")) {
+                codigoMepa.add("LEIT");
+                noArvore listaExp = buscarFilho(no, "<lista_de_expressões>");
+                if (listaExp != null) {
+                    String nomeVar = extrairLexemaPorSimbolo(listaExp, "identificador");
+                    Simbolo sim = tabelaSimbolos.buscar(nomeVar);
+                    if (sim != null) codigoMepa.add("ARMZ " + sim.getEnderecoRelativo());
+                }
+                return;
+            }
+            else if (lexemaCmd.equals("write")) {
+                noArvore listaExp = buscarFilho(no, "<lista_de_expressões>");
+                if (listaExp != null) {
+                    visitar(listaExp);
+                    codigoMepa.add("IMPR");
+                }
+                return;
+            }
         }
 
 
@@ -131,20 +156,17 @@ public class GeradorCodigo {
         }
 
         // read e write
-        else if (simbolo.equals("<chamada_de_procedimento>") || (simbolo.equals("<comando>") && !temAtribuicao(no))) {
+        else if (simbolo.equals("<chamada_de_procedimento>") ||
+                (simbolo.equals("<comando>") && !temAtribuicao(no))) {
+
             if (no.getFilhos().isEmpty()) return;
 
-            // pega o 1º filho diretamente (garante que pega "read" ou "write")
-            noArvore primeiroFilho = no.getFilhos().get(0);
-            String nomeProc = primeiroFilho.getLexema() != null && !primeiroFilho.getLexema().isEmpty()
-                    ? primeiroFilho.getLexema().toLowerCase()
-                    : primeiroFilho.getSimbolo().toLowerCase();
+            String nomeProc = extrairLexemaPorSimbolo(no.getFilhos().get(0), "identificador").toLowerCase();
 
             if (nomeProc.equals("read")) {
                 codigoMepa.add("LEIT");
                 noArvore listaExp = buscarFilho(no, "<lista_de_expressões>");
                 if (listaExp != null) {
-                    // extrai a variável que está dentro dos parênteses
                     String nomeVar = extrairLexemaPorSimbolo(listaExp, "identificador");
                     Simbolo sim = tabelaSimbolos.buscar(nomeVar);
                     if (sim != null) codigoMepa.add("ARMZ " + sim.getEnderecoRelativo());
@@ -182,6 +204,25 @@ public class GeradorCodigo {
             return;
         }
 
+        else if (simbolo.endsWith("'>") || simbolo.endsWith("_linha>")) {
+            if (no.getFilhos().size() >= 2) {
+                noArvore opNode = no.getFilhos().get(0);
+                noArvore rightNode = no.getFilhos().get(1);
+
+                String op = extrairLexemaOperador(opNode);
+                if (!op.isEmpty()) {
+                    visitar(rightNode); // Avalia o lado direito da conta
+                    gerarInstrucaoOperador(op); // Executa a conta
+
+                    // Se houver mais continuação (ex: + c + d), continua varrendo
+                    if (no.getFilhos().size() > 2) {
+                        visitar(no.getFilhos().get(2));
+                    }
+                    return;
+                }
+            }
+        }
+
         // Se for um nó de operação (+, -, *, /)
         if (ehOperador(simbolo)) {
             // em pós-ordem, os filhos já foram visitados e estão na pilha
@@ -200,17 +241,31 @@ public class GeradorCodigo {
             case "+": codigoMepa.add("SOMA"); break;
             case "-": codigoMepa.add("SUBT"); break;
             case "*": codigoMepa.add("MULT"); break;
+            case "div":
             case "/": codigoMepa.add("DIVI"); break;
             case ">": codigoMepa.add("CMAI"); break;
             case "<": codigoMepa.add("CMEN"); break;
             case "=": codigoMepa.add("CMIG"); break;
-            // ... (adicionar outros de acordo com o material da MEPA)
+            case ">=": codigoMepa.add("CMAQ"); break;
+            case "<=": codigoMepa.add("CMEQ"); break;
+            case "<>": codigoMepa.add("CDIF"); break;
+            case "and": codigoMepa.add("CONJ"); break;
+            case "or": codigoMepa.add("DISJ"); break;
         }
     }
 
     private boolean ehOperador(String sim) {
         return sim.equals("+") || sim.equals("-") || sim.equals("*") || sim.equals("/") ||
                 sim.equals(">") || sim.equals("<") || sim.equals("=");
+    }
+
+    private String extrairLexemaOperador(noArvore no) {
+        if (no == null) return "";
+        String sim = no.getSimbolo();
+        if (ehOperador(sim)) return sim;
+        if (no.getLexema() != null && ehOperador(no.getLexema())) return no.getLexema();
+        if (!no.getFilhos().isEmpty()) return extrairLexemaOperador(no.getFilhos().get(0));
+        return "";
     }
 
     private List<String> extrairIdentificadores(noArvore no) {
@@ -277,5 +332,12 @@ public class GeradorCodigo {
         }
 
         return ""; // Retorna vazio se não encontrar
+    }
+
+    // Verifica se o nó começa com uma variável
+    private boolean comecaComIdentificador(noArvore no) {
+        if (no == null || no.getFilhos().isEmpty()) return false;
+        String sim = no.getFilhos().get(0).getSimbolo();
+        return sim.equals("identificador") || sim.equals("<identificador>");
     }
 }

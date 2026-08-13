@@ -2,6 +2,8 @@ package br.unesp.compilerLALG.dto;
 
 import br.unesp.compilerLALG.core.lexer.Token;
 import br.unesp.compilerLALG.core.parser.ast.noArvore;
+import br.unesp.compilerLALG.core.semantic.Simbolo;
+import br.unesp.compilerLALG.core.semantic.TabelaSimbolos;
 
 import java.util.List;
 
@@ -13,6 +15,7 @@ public class CompilacaoResponse {
     private List<String> erros;
     private noArvore arvoreSintatica;
     private String codigoMEPA;
+    private List<Simbolo> tabelaSimbolos;
 
     public CompilacaoResponse() {
     }
@@ -29,12 +32,14 @@ public class CompilacaoResponse {
     public List<Token> getTokens() { return tokens; }
     public List<String> getErros() { return erros; }
     public noArvore getArvoreSintatica() { return arvoreSintatica; }
+    public List<Simbolo> getTabelaSimbolos() { return tabelaSimbolos; }
 
     public void setSucesso(boolean sucesso) { this.sucesso = sucesso; }
     public void setMensagem(String mensagem) { this.mensagem = mensagem; }
     public void setTokens(List<Token> tokens) { this.tokens = tokens; }
     public void setErros(List<String> erros) { this.erros = erros; }
     public void setArvoreSintatica(noArvore arvoreSintatica) { this.arvoreSintatica = arvoreSintatica; }
+    public void setTabelaSimbolos(List<Simbolo> tabelaSimbolos) { this.tabelaSimbolos = tabelaSimbolos; }
     public String getCodigoMEPA() { return codigoMEPA; }
     public void setCodigoMEPA(String codigoMEPA) { this.codigoMEPA = codigoMEPA; }
 }

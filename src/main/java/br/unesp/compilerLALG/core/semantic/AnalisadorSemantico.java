@@ -48,7 +48,7 @@ public class AnalisadorSemantico {
         }
 
         // Processar Atribuições (Checagem de Tipos)
-        else if (simbolo.equals("<comando>")) {
+        else if (simbolo.equals("<comando>") && comecaComIdentificador(no)) {
             processarComando(no);
             return;
         }
@@ -181,35 +181,16 @@ public class AnalisadorSemantico {
     }
 
     private void processarChamadaProcedimento(noArvore noChamada) {
-//        String nomeProc = extrairLexemaPorSimbolo(noChamada, "identificador");
-//
-//        // Procedimentos nativos do LALG são ignorados na checagem
-//        if (nomeProc.equals("read") || nomeProc.equals("write")) return;
-//
-//        Simbolo sim = tabelaSimbolos.buscar(nomeProc);
-//        if (sim == null) {
-//            errosSemanticos.add(new CompilerException.SemanticException("Erro Semântico: Procedimento '" + nomeProc + "' não declarado."));
-//        } else if (!sim.getCategoria().equals("proc")) {
-//            errosSemanticos.add(new CompilerException.SemanticException("Erro Semântico: O identificador '" + nomeProc + "' " +
-//                    "não é um procedimento."));
-//        }
         if (noChamada.getFilhos().isEmpty()) return;
 
-        // MÁGICA: Olha diretamente para o 1º filho em vez de fazer busca profunda!
-        noArvore primeiroFilho = noChamada.getFilhos().get(0);
-        String nomeProc = primeiroFilho.getLexema() != null && !primeiroFilho.getLexema().isEmpty()
-                ? primeiroFilho.getLexema().toLowerCase()
-                : primeiroFilho.getSimbolo().toLowerCase();
+        String nomeProc = extrairLexemaPorSimbolo(noChamada.getFilhos().get(0), "identificador").toLowerCase();
 
-        // 1. É um READ ou WRITE nativo?
         if (nomeProc.equals("read") || nomeProc.equals("write")) {
-            // Garante que a variável/expressão lá dentro foi declarada!
             noArvore listaExp = buscarFilho(noChamada, "<lista_de_expressões>");
             if (listaExp != null) inferirTipoExpressao(listaExp);
-            return; // Interrompe aqui, pois read/write não estão na tabela de símbolos
+            return;
         }
 
-        // 2. É uma procedure do programador
         Simbolo sim = tabelaSimbolos.buscar(nomeProc);
         if (sim == null) {
             errosSemanticos.add(new CompilerException.IdentificadorNaoDeclaradoException(nomeProc));
@@ -250,18 +231,6 @@ public class AnalisadorSemantico {
         // Procura nos filhos recursivamente para saber a base da conta
         String tipoDominante = "int"; // Assumimos int até prova em contrário (para contas)
 
-//        for (noArvore filho : no.getFilhos()) {
-//            if (filho.getSimbolo().contains("<expressão") ||
-//                    filho.getSimbolo().contains("<termo") ||
-//                    filho.getSimbolo().contains("<fator")) {
-//
-//                String tipoFilho = inferirTipoExpressao(filho);
-//                if (tipoFilho.equals("boolean")) {
-//                    tipoDominante = "boolean"; // Se envolver 'or', 'and', ou 'not'
-//                }
-//            }
-//        }
-//        return tipoDominante;
         for (noArvore filho : no.getFilhos()) {
             String t = inferirTipoExpressao(filho);
             if (t.equals("boolean")) {
@@ -321,6 +290,13 @@ public class AnalisadorSemantico {
             if (contemOperadorRelacional(f)) return true;
         }
         return false;
+    }
+
+    // Verifica se o nó começa com uma variável
+    private boolean comecaComIdentificador(noArvore no) {
+        if (no == null || no.getFilhos().isEmpty()) return false;
+        String sim = no.getFilhos().get(0).getSimbolo();
+        return sim.equals("identificador") || sim.equals("<identificador>");
     }
 
     public boolean temErros() {

@@ -1,8 +1,6 @@
 package br.unesp.compilerLALG.core.semantic;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Stack;
+import java.util.*;
 
 public class TabelaSimbolos {
 
@@ -49,5 +47,14 @@ public class TabelaSimbolos {
             }
         }
         return null; // Erro: Variável não declarada
+    }
+
+    public List<Simbolo> getTodosSimbolos() {
+        List<Simbolo> todos = new ArrayList<>();
+        // Percorre todos os mapas da pilha
+        for (Map<String, Simbolo> escopo : escopos) {
+            todos.addAll(escopo.values());
+        }
+        return todos;
     }
 }

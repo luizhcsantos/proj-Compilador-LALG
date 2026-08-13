@@ -8,6 +8,7 @@ import br.unesp.compilerLALG.core.parser.Parser;
 import br.unesp.compilerLALG.core.parser.TabelaSintatica;
 import br.unesp.compilerLALG.core.parser.ast.noArvore;
 import br.unesp.compilerLALG.core.semantic.AnalisadorSemantico;
+import br.unesp.compilerLALG.core.semantic.TabelaSimbolos;
 import br.unesp.compilerLALG.dto.CompilacaoRequest;
 import br.unesp.compilerLALG.dto.CompilacaoResponse;
 import org.springframework.http.ResponseEntity;
@@ -58,7 +59,7 @@ public class CompiladorController {
         AnalisadorSemantico semantico = new AnalisadorSemantico();
         if (raiz != null) {
             semantico.analisar(raiz);
-
+            response.setTabelaSimbolos(semantico.getTabelaSimbolos().getTodosSimbolos());
             if (semantico.temErros()) {
                 todosOsErros.addAll(semantico.getErros().stream().map(Throwable::getMessage).toList());
             }

@@ -1,6 +1,5 @@
 <template>
 
-
   <nav class="sidebar">
     <div style="margin-bottom: 30px; font-size: 24px; color: var(--texto-cinza)">≡</div>
     <button class="sidebar-item active"><span class="sidebar-icon">🏠</span>Início</button>
@@ -48,7 +47,7 @@
             <div class="card-icon" style="background: #8aa9e8;">☰</div>
             Símbolos
           </div>
-          <div class="card-number">0 <span class="card-label">símbolos</span></div>
+          <div class="card-number">{{ listaSimbolos.length }} <span class="card-label">símbolos</span></div>
         </div>
       </div>
 
@@ -94,8 +93,6 @@
         </div>
 
       </div>
-
-
 
     </div>
 
@@ -164,23 +161,57 @@
           </table>
         </div>
 
-        <div v-if="visaoAtiva === 'visao-arvore'"
+        <div v-show="visaoAtiva === 'visao-simbolos'" class="tabela-container" style="height: 100%; overflow: auto; background: white; padding: 15px; border-radius: 12px; border: 1px solid var(--borda);">
+          <h3 style="margin-bottom: 15px; color: #1e293b;">Tabela de Símbolos (Análise Semântica)</h3>
+
+          <table class="tabela-ll1" style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead style="background: #1e293b; color: white;">
+            <tr>
+              <th style="padding: 10px; border: 1px solid #cbd5e1;">Identificador</th>
+              <th style="padding: 10px; border: 1px solid #cbd5e1;">Tipo</th>
+              <th style="padding: 10px; border: 1px solid #cbd5e1;">Categoria</th>
+              <th style="padding: 10px; border: 1px solid #cbd5e1;">Nível de Escopo</th>
+              <th style="padding: 10px; border: 1px solid #cbd5e1;">Endereço (MEPA)</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr v-if="listaSimbolos.length === 0">
+              <td colspan="5" style="text-align: center; padding: 20px; color: #64748b;">
+                Nenhum símbolo gerado. Verifique se há erros sintáticos ou compile o código primeiro.
+              </td>
+            </tr>
+
+            <tr v-for="(simbolo, index) in listaSimbolos" :key="index" style="border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+              <td style="padding: 10px; font-weight: bold; color: #0f172a;">{{ simbolo.nome }}</td>
+              <td style="padding: 10px; color: #2563eb; font-weight: 500;">{{ simbolo.tipo }}</td>
+              <td style="padding: 10px; color: #475569;">
+                <span style="background: #e2e8f0; padding: 3px 8px; border-radius: 4px; font-size: 12px;">{{ simbolo.categoria }}</span>
+              </td>
+              <td style="padding: 10px; text-align: center;">{{ simbolo.nivelEscopo }}</td>
+              <td style="padding: 10px; font-family: monospace; color: #16a34a; text-align: center; font-weight: bold;">
+                {{ simbolo.enderecoRelativo !== -1 ? simbolo.enderecoRelativo : '-' }}
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div v-show="visaoAtiva === 'visao-arvore'"
              class="arvore-container"
              :class="{ 'maximized-view': arvoreMaximizada }"
-             style="height: 100%; border: 1px solid var(--borda); border-radius: 12px; overflow: hidden; background: white;">
+             style="display: flex; flex-direction: column; height: 100%; border: 1px solid var(--borda); border-radius: 12px; overflow: hidden; background: white;">
 
-          <div
-              style="display: flex; gap: 15px; padding: 10px 15px; background: var(--bg-main); border-bottom: 1px solid var(--borda); align-items: center;">
+          <div style="display: flex; gap: 15px; padding: 10px 15px; background: var(--bg-main); border-bottom: 1px solid var(--borda); align-items: center;">
             <button class="btn-action-arvore" @click="arvoreMaximizada = !arvoreMaximizada">
               {{ arvoreMaximizada ? '🗗 Restaurar' : '🗖 Maximizar' }}
             </button>
 
             <div style="width: 1px; background: var(--borda); height: 20px;"></div>
-            <button @click="mostrarArvoreCompleta" :style="{ fontWeight: !modoPassoPasso ? 'bold' : 'normal' }">🌳
-              Completa
+            <button @click="mostrarArvoreCompleta" :style="{ fontWeight: !modoPassoPasso ? 'bold' : 'normal' }">
+              🌳 Completa
             </button>
-            <button @click="iniciarPassoAPasso" :style="{ fontWeight: modoPassoPasso ? 'bold' : 'normal' }">👣 Passo a
-              Passo
+            <button @click="iniciarPassoAPasso" :style="{ fontWeight: modoPassoPasso ? 'bold' : 'normal' }">
+              👣 Passo a Passo
             </button>
 
             <div v-show="modoPassoPasso" style="display: flex; gap: 10px; margin-left: auto; align-items: center;">
@@ -229,6 +260,56 @@
               </tr>
               </tbody>
             </table>
+          </div>
+        </div>
+
+        <div v-show="visaoAtiva === 'visao-codigo'" style="height: 100%; background: #0f172a; color: #38bdf8; padding: 20px; border-radius: 12px; font-family: monospace; overflow-y: auto;">
+          <h3 style="color: #f8fafc; margin-bottom: 15px; font-family: sans-serif;">Código Intermediário Gerado (Bytecode MEPA)</h3>
+          <pre style="line-height: 1.5; font-size: 14px;">{{ codigoMepaGerado || '; Nenhum código gerado ainda. Compile um programa válido.' }}</pre>
+        </div>
+
+        <div v-show="visaoAtiva === 'visao-mepa'" style="height: 100%; background: white; padding: 20px; border-radius: 12px; border: 1px solid var(--borda); display: flex; flex-direction: column;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h3 style="color: #1e293b; margin: 0;">Simulador da Máquina Virtual MEPA</h3>
+            <button @click="iniciarExecucaoMEPA" :disabled="isExecutando" style="background: #2563eb; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold;">
+              ▶ Iniciar Execução Visual
+            </button>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; flex: 1;">
+
+            <div style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; overflow-y: auto; max-height: 400px;">
+              <h4 style="margin-bottom: 10px; color: #0f172a;">Instruções</h4>
+              <div v-for="(linha, index) in instrucoesMepa" :key="index"
+                   :style="{ padding: '4px 8px', fontFamily: 'monospace', fontSize: '13px',
+                             backgroundColor: index === ponteiroInstrucao ? '#fef08a' : 'transparent',
+                             borderLeft: index === ponteiroInstrucao ? '4px solid #eab308' : '4px solid transparent',
+                             fontWeight: index === ponteiroInstrucao ? 'bold' : 'normal'}">
+                {{ index }}: {{ linha }}
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+
+              <div style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; flex: 1; display: flex; flex-direction: column;">
+                <h4 style="margin-bottom: 10px; color: #0f172a;">Pilha de Dados (M)</h4>
+                <div style="font-family: monospace; background: #0f172a; color: #4ade80; padding: 10px; border-radius: 4px; flex: 1; display: flex; flex-direction: column-reverse; overflow-y: auto;">
+                  <div v-if="memoriaMepa.length === 0" style="color: #64748b; text-align: center;">[ VAZIO ]</div>
+                  <div v-for="(valor, index) in memoriaMepa" :key="index" style="padding: 4px 0; border-bottom: 1px dashed #334155;">
+                    <span style="color: #94a3b8; font-size: 11px; margin-right: 8px;">Endereço {{ index }}</span>
+                    <span style="font-weight: bold;">{{ valor }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; height: 120px; display: flex; flex-direction: column;">
+                <h4 style="margin-bottom: 10px; color: #0f172a;">Terminal (Comando write)</h4>
+                <div style="font-family: monospace; background: black; color: white; padding: 10px; border-radius: 4px; flex: 1; overflow-y: auto;">
+                  <div v-for="(log, i) in consoleSaida" :key="i">> {{ log }}</div>
+                </div>
+              </div>
+
+            </div>
           </div>
         </div>
 
@@ -283,6 +364,7 @@ import {Controls} from '@vue-flow/controls';
 import {Codemirror} from 'vue-codemirror';
 import {StreamLanguage} from '@codemirror/language';
 import {pascal} from '@codemirror/legacy-modes/mode/pascal';
+import { useVueFlow } from '@vue-flow/core';
 
 import '@vue-flow/core/dist/style.css'
 import '@vue-flow/core/dist/theme-default.css'
@@ -313,11 +395,17 @@ const consoleAberto = ref(true);
 const arvoreMaximizada = ref(false);
 const inputArquivoEscondido = ref(null);
 
+const listaSimbolos = ref([]);
 const matrizSintatica = ref({});
 const colunasTerminais = ref([]);
 const linhasNaoTerminais = ref([]);
 
-
+const instrucoesMepa = ref([]);
+const memoriaMepa = ref([]);    // pilha de dados (M)
+const consoleSaida = ref([]);   // saída do comando IMPR
+const ponteiroInstrucao = ref(0); // instruction pointer (IP)
+const isExecutando = ref(false);  // trava para não rodar várias vezes
+const { fitView } = useVueFlow();
 
 // === Funções da interface ===
 function mudarVisao(novaVisao) {
@@ -433,6 +521,8 @@ async function compilar() {
       mudarVisao('visao-lexemas')
       linhasDigitadas.value = codigoFonte.value.split('\n').length;
       arvoreCompleta.value = dados.arvoreSintatica;
+      listaSimbolos.value = dados.tabelaSimbolos || [];
+      codigoMepaGerado.value = dados.codigoMepa || '';
       modoPassoPasso.value = false;
 
       processarArvore(dados.arvoreSintatica)
@@ -455,6 +545,9 @@ function processarArvore(noRaiz) {
   if (!noRaiz) {
     nosDaArvore.value = []
     linhasDaArvore.value = []
+    setTimeout(() => {
+      fitView();
+    }, 100);
     totalNos.value = 0
     return
   }
@@ -683,11 +776,144 @@ async function carregarTabelaSintaticaAPI() {
 }
 
 
+function iniciarExecucaoMEPA() {
+  if (!codigoMepaGerado.value) {
+    alert("Compile o código primeiro para gerar o Bytecode MEPA.");
+    return;
+  }
+
+  // divide o texto num array de linhas
+  instrucoesMepa.value = codigoMepaGerado.value.split('\n').filter(linha => linha.trim() !== '');
+
+  // limpa a máquina
+  memoriaMepa.value = [];
+  consoleSaida.value = [];
+  ponteiroInstrucao.value = 0;
+  isExecutando.value = true;
+
+  // executa até encontrar PARA
+  executarProximoPasso();
+}
+
+function executarProximoPasso() {
+  if (ponteiroInstrucao.value >= instrucoesMepa.value.length || !isExecutando.value) {
+    isExecutando.value = false;
+    return;
+  }
+
+  let linhaAtual = instrucoesMepa.value[ponteiroInstrucao.value].trim();
+
+  // se a linha for um rótulo ignora a operação e avança
+  if (linhaAtual.includes(": NADA")) {
+    ponteiroInstrucao.value++;
+    setTimeout(executarProximoPasso, 100);
+    return;
+  }
+
+  let partes = linhaAtual.split(' ');
+  let comando = partes[0];
+  let parametro = partes.length > 1 ? parseInt(partes[1]) : null;
+
+  let s = memoriaMepa.value.length - 1; // topo da Pilha (S)
+
+  switch (comando) {
+    case "INPP":
+      break;
+
+    case "AMEM":
+      for (let i = 0; i < parametro; i++) {
+        memoriaMepa.value.push(0); // inicializa com lixo (0)
+      }
+      break;
+
+    case "CRCT":
+      memoriaMepa.value.push(parametro);
+      break;
+
+    case "CRVL":
+      memoriaMepa.value.push(memoriaMepa.value[parametro]);
+      break;
+
+    case "ARMZ":
+      memoriaMepa.value[parametro] = memoriaMepa.value.pop();
+      break;
+
+    case "SOMA":
+      memoriaMepa.value[s - 1] = memoriaMepa.value[s - 1] + memoriaMepa.value.pop();
+      break;
+
+    case "SUBT":
+      memoriaMepa.value[s - 1] = memoriaMepa.value[s - 1] - memoriaMepa.value.pop();
+      break;
+
+    case "MULT":
+      memoriaMepa.value[s - 1] = memoriaMepa.value[s - 1] * memoriaMepa.value.pop();
+      break;
+
+    case "DIVI":
+      memoriaMepa.value[s - 1] = Math.floor(memoriaMepa.value[s - 1] / memoriaMepa.value.pop());
+      break;
+
+    case "CMAI":
+      memoriaMepa.value[s - 1] = memoriaMepa.value[s - 1] > memoriaMepa.value.pop() ? 1 : 0;
+      break;
+
+    case "CMEN":
+      memoriaMepa.value[s - 1] = memoriaMepa.value[s - 1] < memoriaMepa.value.pop() ? 1 : 0;
+      break;
+
+    case "CMIG":
+      memoriaMepa.value[s - 1] = memoriaMepa.value[s - 1] === memoriaMepa.value.pop() ? 1 : 0;
+      break;
+
+    case "DSVF":
+      let condicaoFalsa = memoriaMepa.value.pop() === 0;
+      if (condicaoFalsa) {
+        // encontra a linha que tem o rótulo
+        let rotulo = partes[1];
+        let indexAlvo = instrucoesMepa.value.findIndex(l => l.startsWith(rotulo + ":"));
+        if (indexAlvo !== -1) {
+          ponteiroInstrucao.value = indexAlvo; // pula o IP para lá
+          setTimeout(executarProximoPasso, 100);
+          return; // retorna para evitar o IP++ em baixo
+        }
+      }
+      break;
+
+    case "DSVS":
+      let rotuloSalto = partes[1];
+      let indexSalto = instrucoesMepa.value.findIndex(l => l.startsWith(rotuloSalto + ":"));
+      if (indexSalto !== -1) {
+        ponteiroInstrucao.value = indexSalto;
+        setTimeout(executarProximoPasso, 100);
+        return;
+      }
+      break;
+
+    case "LEIT":
+      let valorEntrada = prompt("Programa solicitou entrada de dados (READ):", "0");
+      memoriaMepa.value.push(parseInt(valorEntrada) || 0);
+      break;
+
+    case "IMPR":
+      consoleSaida.value.push(memoriaMepa.value.pop());
+      break;
+
+    case "PARA":
+      isExecutando.value = false;
+      return;
+  }
+
+  ponteiroInstrucao.value++;
+  setTimeout(executarProximoPasso, 100);
+}
+
+
 // Inicializa o tema ao carregar a página
 onMounted(async () => {
   document.documentElement.setAttribute('data-theme', temaAtual.value)
   atualizarLinhas()
-  carregarTabelaSintaticaAPI();
+  await carregarTabelaSintaticaAPI();
 
 });
 </script>
